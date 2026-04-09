@@ -27,10 +27,13 @@ export default async function DashboardPage() {
   const summonIds = inventory.filter((i) => i.itemType === "summon").map((i) => i.itemId);
   const weaponIds = inventory.filter((i) => i.itemType === "weapon").map((i) => i.itemId);
 
-  const [characters, summons, weapons] = await Promise.all([
+  const [characters, summons, weapons, totalSsrChars, totalSsrSummons, totalSsrWeapons] = await Promise.all([
     charIds.length ? prisma.character.findMany({ where: { id: { in: charIds } } }) : [],
     summonIds.length ? prisma.summon.findMany({ where: { id: { in: summonIds } } }) : [],
     weaponIds.length ? prisma.weapon.findMany({ where: { id: { in: weaponIds } } }) : [],
+    prisma.character.count({ where: { rarity: "SSR" } }),
+    prisma.summon.count({ where: { rarity: "SSR" } }),
+    prisma.weapon.count({ where: { rarity: "SSR" } }),
   ]);
 
   const charMap = Object.fromEntries(characters.map((c) => [c.id, c]));
@@ -44,6 +47,10 @@ export default async function DashboardPage() {
   const myChars = inventory.filter((i) => i.itemType === "character");
   const mySummons = inventory.filter((i) => i.itemType === "summon");
   const myWeapons = inventory.filter((i) => i.itemType === "weapon");
+
+  const ownedSsrChars = characters.filter((c) => c.rarity === "SSR").length;
+  const ownedSsrSummons = summons.filter((s) => s.rarity === "SSR").length;
+  const ownedSsrWeapons = weapons.filter((w) => w.rarity === "SSR").length;
 
   return (
     <div className="space-y-8">
@@ -59,9 +66,12 @@ export default async function DashboardPage() {
 
       {/* 統計 */}
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="キャラクター" count={myChars.length} href="/characters" />
-        <StatCard label="召喚石" count={mySummons.length} href="/summons" />
-        <StatCard label="武器" count={myWeapons.length} href="/weapons" />
+        <StatCard label="キャラクター" count={myChars.length} href="/characters"
+          ssrOwned={ownedSsrChars} ssrTotal={totalSsrChars} />
+        <StatCard label="召喚石" count={mySummons.length} href="/summons"
+          ssrOwned={ownedSsrSummons} ssrTotal={totalSsrSummons} />
+        <StatCard label="武器" count={myWeapons.length} href="/weapons"
+          ssrOwned={ownedSsrWeapons} ssrTotal={totalSsrWeapons} />
       </div>
 
       {inventory.length === 0 ? (
@@ -126,7 +136,8 @@ export default async function DashboardPage() {
   );
 }
 
-function StatCard({ label, count, href }: { label: string; count: number; href: string }) {
+function StatCard({ label, count, href, ssrOwned, ssrTotal }: { label: string; count: number; href: string; ssrOwned?: number; ssrTotal?: number }) {
+  const ssrPercent = ssrTotal ? Math.round((ssrOwned ?? 0) / ssrTotal * 100) : 0;
   return (
     <Link
       href={href}
@@ -134,6 +145,12 @@ function StatCard({ label, count, href }: { label: string; count: number; href: 
     >
       <p className="text-3xl font-bold text-sky-400">{count}</p>
       <p className="text-sm text-gray-500 mt-1">{label}</p>
+      {ssrTotal != null && ssrTotal > 0 && (
+        <p className="text-xs text-gray-500 mt-2">
+          <span className="text-yellow-400">SSR</span>{" "}
+          {ssrOwned ?? 0} / {ssrTotal} ({ssrPercent}%)
+        </p>
+      )}
     </Link>
   );
 }

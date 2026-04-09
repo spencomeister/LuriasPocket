@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { fetchCharacters, fetchSummons, fetchWeapons } from "@/lib/wiki-api";
 import { normalizeCategory } from "@/lib/normalize";
 
+const BATCH_SIZE = 50;
+
 /**
  * POST /api/fetch-wiki
  * GBF Wiki からデータを取得してデータベースに保存する。
@@ -20,40 +22,43 @@ export async function POST(request: NextRequest) {
   if (target === "all" || target === "characters") {
     try {
       const chars = await fetchCharacters("SSR");
-      let upserted = 0;
-      for (const c of chars) {
-        await prisma.character.upsert({
-          where: { name: c.name },
-          create: {
-            name: c.name,
-            gameId: c.gameId,
-            nameJp: c.nameJp,
-            rarity: c.rarity,
-            element: c.element,
-            weapon: c.weapon,
-            category: normalizeCategory(c.category),
-            imageUrl: c.imageUrl,
-            releaseDate: c.releaseDate,
-            obtain: c.obtain,
-            skills: JSON.stringify(c.skills),
-            abilities: JSON.stringify(c.abilities),
-          },
-          update: {
-            gameId: c.gameId,
-            nameJp: c.nameJp,
-            element: c.element,
-            weapon: c.weapon,
-            category: normalizeCategory(c.category),
-            imageUrl: c.imageUrl,
-            releaseDate: c.releaseDate,
-            obtain: c.obtain,
-            skills: JSON.stringify(c.skills),
-            abilities: JSON.stringify(c.abilities),
-          },
-        });
-        upserted++;
+      for (let i = 0; i < chars.length; i += BATCH_SIZE) {
+        const batch = chars.slice(i, i + BATCH_SIZE);
+        await prisma.$transaction(
+          batch.map((c) =>
+            prisma.character.upsert({
+              where: { name: c.name },
+              create: {
+                name: c.name,
+                gameId: c.gameId,
+                nameJp: c.nameJp,
+                rarity: c.rarity,
+                element: c.element,
+                weapon: c.weapon,
+                category: normalizeCategory(c.category),
+                imageUrl: c.imageUrl,
+                releaseDate: c.releaseDate,
+                obtain: c.obtain,
+                skills: JSON.stringify(c.skills),
+                abilities: JSON.stringify(c.abilities),
+              },
+              update: {
+                gameId: c.gameId,
+                nameJp: c.nameJp,
+                element: c.element,
+                weapon: c.weapon,
+                category: normalizeCategory(c.category),
+                imageUrl: c.imageUrl,
+                releaseDate: c.releaseDate,
+                obtain: c.obtain,
+                skills: JSON.stringify(c.skills),
+                abilities: JSON.stringify(c.abilities),
+              },
+            })
+          )
+        );
       }
-      results.characters = { fetched: chars.length, upserted };
+      results.characters = { fetched: chars.length, upserted: chars.length };
     } catch (err) {
       results.characters = { error: String(err) };
     }
@@ -63,33 +68,36 @@ export async function POST(request: NextRequest) {
   if (target === "all" || target === "summons") {
     try {
       const summons = await fetchSummons();
-      let upserted = 0;
-      for (const s of summons) {
-        await prisma.summon.upsert({
-          where: { name: s.name },
-          create: {
-            name: s.name,
-            gameId: s.gameId,
-            nameJp: s.nameJp,
-            element: s.element,
-            category: normalizeCategory(s.category),
-            imageUrl: s.imageUrl,
-            mainAura: s.mainAura,
-            subAura: s.subAura,
-          },
-          update: {
-            gameId: s.gameId,
-            nameJp: s.nameJp,
-            element: s.element,
-            category: normalizeCategory(s.category),
-            imageUrl: s.imageUrl,
-            mainAura: s.mainAura,
-            subAura: s.subAura,
-          },
-        });
-        upserted++;
+      for (let i = 0; i < summons.length; i += BATCH_SIZE) {
+        const batch = summons.slice(i, i + BATCH_SIZE);
+        await prisma.$transaction(
+          batch.map((s) =>
+            prisma.summon.upsert({
+              where: { name: s.name },
+              create: {
+                name: s.name,
+                gameId: s.gameId,
+                nameJp: s.nameJp,
+                element: s.element,
+                category: normalizeCategory(s.category),
+                imageUrl: s.imageUrl,
+                mainAura: s.mainAura,
+                subAura: s.subAura,
+              },
+              update: {
+                gameId: s.gameId,
+                nameJp: s.nameJp,
+                element: s.element,
+                category: normalizeCategory(s.category),
+                imageUrl: s.imageUrl,
+                mainAura: s.mainAura,
+                subAura: s.subAura,
+              },
+            })
+          )
+        );
       }
-      results.summons = { fetched: summons.length, upserted };
+      results.summons = { fetched: summons.length, upserted: summons.length };
     } catch (err) {
       results.summons = { error: String(err) };
     }
@@ -99,35 +107,38 @@ export async function POST(request: NextRequest) {
   if (target === "all" || target === "weapons") {
     try {
       const weapons = await fetchWeapons();
-      let upserted = 0;
-      for (const w of weapons) {
-        await prisma.weapon.upsert({
-          where: { name: w.name },
-          create: {
-            name: w.name,
-            gameId: w.gameId,
-            nameJp: w.nameJp,
-            element: w.element,
-            weaponType: normalizeCategory(w.weaponType) ?? "",
-            category: normalizeCategory(w.category),
-            imageUrl: w.imageUrl,
-            skills: JSON.stringify(w.skills),
-            obtain: w.obtain,
-          },
-          update: {
-            gameId: w.gameId,
-            nameJp: w.nameJp,
-            element: w.element,
-            weaponType: normalizeCategory(w.weaponType) ?? "",
-            category: normalizeCategory(w.category),
-            imageUrl: w.imageUrl,
-            skills: JSON.stringify(w.skills),
-            obtain: w.obtain,
-          },
-        });
-        upserted++;
+      for (let i = 0; i < weapons.length; i += BATCH_SIZE) {
+        const batch = weapons.slice(i, i + BATCH_SIZE);
+        await prisma.$transaction(
+          batch.map((w) =>
+            prisma.weapon.upsert({
+              where: { name: w.name },
+              create: {
+                name: w.name,
+                gameId: w.gameId,
+                nameJp: w.nameJp,
+                element: w.element,
+                weaponType: normalizeCategory(w.weaponType) ?? "",
+                category: normalizeCategory(w.category),
+                imageUrl: w.imageUrl,
+                skills: JSON.stringify(w.skills),
+                obtain: w.obtain,
+              },
+              update: {
+                gameId: w.gameId,
+                nameJp: w.nameJp,
+                element: w.element,
+                weaponType: normalizeCategory(w.weaponType) ?? "",
+                category: normalizeCategory(w.category),
+                imageUrl: w.imageUrl,
+                skills: JSON.stringify(w.skills),
+                obtain: w.obtain,
+              },
+            })
+          )
+        );
       }
-      results.weapons = { fetched: weapons.length, upserted };
+      results.weapons = { fetched: weapons.length, upserted: weapons.length };
     } catch (err) {
       results.weapons = { error: String(err) };
     }
