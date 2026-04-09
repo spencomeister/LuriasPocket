@@ -54,9 +54,9 @@ export default async function WeaponsPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
   if (elementArr.length > 0) where.element = elementArr.length === 1 ? elementArr[0] : { in: elementArr };
-  if (weaponTypeArr.length > 0) where.weaponType = weaponTypeArr.length === 1 ? weaponTypeArr[0] : { in: weaponTypeArr };
-  if (categoryArr.length > 0) where.category = categoryArr.length === 1 ? categoryArr[0] : { in: categoryArr };
-  if (rarityArr.length > 0) where.rarity = rarityArr.length === 1 ? rarityArr[0] : { in: rarityArr };
+  if (weaponTypeArr.length > 0) where.weaponType = { in: weaponTypeArr };
+  if (categoryArr.length > 0) where.category = { in: categoryArr };
+  if (rarityArr.length > 0) where.rarity = { in: rarityArr };
   if (q) {
     where.OR = [
       { nameJp: { contains: q } },
@@ -65,13 +65,12 @@ export default async function WeaponsPage({
   }
 
   // システム除外適用
-  const notConditions: Record<string, string>[] = [];
-  for (const ex of exclusions) {
-    if (ex.type === "category") notConditions.push({ category: ex.value });
-    if (ex.type === "weaponType") notConditions.push({ weaponType: ex.value });
-    if (ex.type === "series") notConditions.push({ category: ex.value });
-  }
-  if (notConditions.length > 0) where.NOT = notConditions;
+  const exCategoryCombined = exclusions
+    .filter((e) => e.type === "category" || e.type === "series")
+    .map((e) => e.value);
+  const exWeaponType = exclusions.filter((e) => e.type === "weaponType").map((e) => e.value);
+  if (exCategoryCombined.length > 0) where.category = { ...(where.category ?? {}), notIn: exCategoryCombined };
+  if (exWeaponType.length > 0) where.weaponType = { ...(where.weaponType ?? {}), notIn: exWeaponType };
 
   // メインクエリ + 所持状態を並列取得
   const inventoryPromise = session?.user?.id

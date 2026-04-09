@@ -64,9 +64,9 @@ export default async function CharactersPage({
       ...weaponArr.map((w) => ({ weapon: { contains: w } })),
     ];
   }
-  if (categoryArr.length > 0) where.category = categoryArr.length === 1 ? categoryArr[0] : { in: categoryArr };
-  if (seriesArr.length > 0) where.series = seriesArr.length === 1 ? seriesArr[0] : { in: seriesArr };
-  if (rarityArr.length > 0) where.rarity = rarityArr.length === 1 ? rarityArr[0] : { in: rarityArr };
+  if (categoryArr.length > 0) where.category = { in: categoryArr };
+  if (seriesArr.length > 0) where.series = { in: seriesArr };
+  if (rarityArr.length > 0) where.rarity = { in: rarityArr };
   if (q) {
     const searchOr = [
       { nameJp: { contains: q } },
@@ -76,12 +76,10 @@ export default async function CharactersPage({
   }
 
   // システム除外適用
-  const notConditions: Record<string, string>[] = [];
-  for (const ex of exclusions) {
-    if (ex.type === "category") notConditions.push({ category: ex.value });
-    if (ex.type === "series") notConditions.push({ series: ex.value });
-  }
-  if (notConditions.length > 0) where.NOT = notConditions;
+  const exCategory = exclusions.filter((e) => e.type === "category").map((e) => e.value);
+  const exSeries = exclusions.filter((e) => e.type === "series").map((e) => e.value);
+  if (exCategory.length > 0) where.category = { ...(where.category ?? {}), notIn: exCategory };
+  if (exSeries.length > 0) where.series = { ...(where.series ?? {}), notIn: exSeries };
 
   // メインクエリ + 所持状態を並列取得
   const inventoryPromise = session?.user?.id

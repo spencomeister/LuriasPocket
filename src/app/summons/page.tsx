@@ -50,8 +50,8 @@ export default async function SummonsPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
   if (elementArr.length > 0) where.element = elementArr.length === 1 ? elementArr[0] : { in: elementArr };
-  if (categoryArr.length > 0) where.category = categoryArr.length === 1 ? categoryArr[0] : { in: categoryArr };
-  if (rarityArr.length > 0) where.rarity = rarityArr.length === 1 ? rarityArr[0] : { in: rarityArr };
+  if (categoryArr.length > 0) where.category = { in: categoryArr };
+  if (rarityArr.length > 0) where.rarity = { in: rarityArr };
   if (q) {
     where.OR = [
       { nameJp: { contains: q } },
@@ -60,11 +60,8 @@ export default async function SummonsPage({
   }
 
   // システム除外適用
-  const notConditions: Record<string, string>[] = [];
-  for (const ex of exclusions) {
-    if (ex.type === "category") notConditions.push({ category: ex.value });
-  }
-  if (notConditions.length > 0) where.NOT = notConditions;
+  const exCategory = exclusions.filter((e) => e.type === "category").map((e) => e.value);
+  if (exCategory.length > 0) where.category = { ...(where.category ?? {}), notIn: exCategory };
 
   // メインクエリ + 所持状態を並列取得
   const inventoryPromise = session?.user?.id
