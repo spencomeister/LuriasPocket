@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   // キャラクター
   if (target === "all" || target === "characters") {
     try {
-      const chars = await fetchCharacters("SSR");
+      const chars = await fetchCharacters();
       for (let i = 0; i < chars.length; i += BATCH_SIZE) {
         const batch = chars.slice(i, i + BATCH_SIZE);
         await prisma.$transaction(

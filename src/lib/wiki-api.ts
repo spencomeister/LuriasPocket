@@ -124,7 +124,7 @@ function buildImageUrl(fileName: string | undefined): string | null {
  * GBF Wiki からキャラクター一覧を取得する。
  * @param rarity 絞り込むレアリティ (デフォルト: "SSR")
  */
-export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> {
+export async function fetchCharacters(): Promise<WikiCharacter[]> {
   const rows = await cargoQueryAll({
     tables: "characters",
     fields: [
@@ -139,7 +139,6 @@ export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> 
       "characters.release_date=releaseDate",
       "characters.obtain",
     ].join(","),
-    where: `characters.rarity="${rarity}"`,
     order_by: "characters.release_date DESC",
   });
 
@@ -147,7 +146,7 @@ export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> 
     name: row["name"] ?? "",
     gameId: row["gameId"] || null,
     nameJp: row["nameJp"] || null,
-    rarity: row["rarity"] ?? rarity,
+    rarity: row["rarity"] ?? "",
     element: row["element"] ?? "",
     weapon: row["weapon"] ?? "",
     category: normalizeCategory(row["category"]),
