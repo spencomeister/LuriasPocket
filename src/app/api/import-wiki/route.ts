@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
               update: {
                 gameId: c.gameId ?? undefined,
                 nameJp: c.nameJp ?? null,
+                rarity: c.rarity ?? undefined,
                 element: c.element ?? "",
                 weapon: c.weapon ?? "",
                 category: normalizeCategory(c.category),

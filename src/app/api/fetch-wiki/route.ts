@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
               update: {
                 gameId: c.gameId,
                 nameJp: c.nameJp,
+                rarity: c.rarity,
                 element: c.element,
                 weapon: c.weapon,
                 category: normalizeCategory(c.category),
