@@ -61,7 +61,9 @@ export default async function SummonsPage({
 
   // システム除外適用
   const exCategory = exclusions.filter((e) => e.type === "category").map((e) => e.value);
-  if (exCategory.length > 0) where.category = { ...(where.category ?? {}), notIn: exCategory };
+  if (exCategory.length > 0) {
+    where.AND = [...(where.AND ?? []), { OR: [{ category: { notIn: exCategory } }, { category: null }] }];
+  }
 
   // メインクエリ + 所持状態を並列取得
   const inventoryPromise = session?.user?.id

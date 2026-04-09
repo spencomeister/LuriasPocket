@@ -69,8 +69,12 @@ export default async function WeaponsPage({
     .filter((e) => e.type === "category" || e.type === "series")
     .map((e) => e.value);
   const exWeaponType = exclusions.filter((e) => e.type === "weaponType").map((e) => e.value);
-  if (exCategoryCombined.length > 0) where.category = { ...(where.category ?? {}), notIn: exCategoryCombined };
-  if (exWeaponType.length > 0) where.weaponType = { ...(where.weaponType ?? {}), notIn: exWeaponType };
+  if (exCategoryCombined.length > 0) {
+    where.AND = [...(where.AND ?? []), { OR: [{ category: { notIn: exCategoryCombined } }, { category: null }] }];
+  }
+  if (exWeaponType.length > 0) {
+    where.AND = [...(where.AND ?? []), { OR: [{ weaponType: { notIn: exWeaponType } }, { weaponType: null }] }];
+  }
 
   // メインクエリ + 所持状態を並列取得
   const inventoryPromise = session?.user?.id

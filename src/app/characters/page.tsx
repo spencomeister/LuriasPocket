@@ -78,8 +78,12 @@ export default async function CharactersPage({
   // システム除外適用
   const exCategory = exclusions.filter((e) => e.type === "category").map((e) => e.value);
   const exSeries = exclusions.filter((e) => e.type === "series").map((e) => e.value);
-  if (exCategory.length > 0) where.category = { ...(where.category ?? {}), notIn: exCategory };
-  if (exSeries.length > 0) where.series = { ...(where.series ?? {}), notIn: exSeries };
+  if (exCategory.length > 0) {
+    where.AND = [...(where.AND ?? []), { OR: [{ category: { notIn: exCategory } }, { category: null }] }];
+  }
+  if (exSeries.length > 0) {
+    where.AND = [...(where.AND ?? []), { OR: [{ series: { notIn: exSeries } }, { series: null }] }];
+  }
 
   // メインクエリ + 所持状態を並列取得
   const inventoryPromise = session?.user?.id
