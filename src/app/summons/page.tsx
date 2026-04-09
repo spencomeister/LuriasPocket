@@ -42,7 +42,7 @@ export default async function SummonsPage({
   const [exclusions, filters, seriesMap, elementMap, session] = await Promise.all([
     getCachedExclusions(),
     getCachedSummonFilters(),
-    getCachedTranslationMap("series"),
+    getCachedTranslationMap("summonCategory"),
     getCachedTranslationMap("element"),
     auth(),
   ]);

@@ -13,8 +13,10 @@ interface Translation {
 const CATEGORIES = [
   { key: "weaponType", label: "武器種" },
   { key: "characterType", label: "キャラタイプ" },
+  { key: "characterSeries", label: "キャラシリーズ" },
+  { key: "summonCategory", label: "召喚石カテゴリ" },
+  { key: "weaponCategory", label: "武器カテゴリ" },
   { key: "element", label: "属性" },
-  { key: "series", label: "シリーズ" },
   { key: "rarity", label: "レアリティ" },
 ] as const;
 

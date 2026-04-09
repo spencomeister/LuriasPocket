@@ -48,7 +48,7 @@ export default async function CharactersPage({
       getCachedExclusions(),
       getCachedCharacterFilters(),
       getCachedTranslationMap("weaponType"),
-      getCachedTranslationMap("series"),
+      getCachedTranslationMap("characterSeries"),
       getCachedTranslationMap("characterType"),
       getCachedTranslationMap("element"),
       auth(),

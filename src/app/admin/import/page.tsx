@@ -88,14 +88,14 @@ export default function AdminImportPage() {
         "characters.release_date=releaseDate",
         "characters.obtain",
       ].join(","),
-      where: 'characters.rarity="SSR"',
       order_by: "characters.release_date DESC",
     });
     const characters = rows.map((r: Record<string, string>) => ({
       name: r.name ?? "",
       gameId: r.gameId || null,
       nameJp: r.nameJp || null,
-      rarity: r.rarity ?? "SSR",
+      rarity: r.rarity ?? "",
+
       element: r.element ?? "",
       weapon: r.weapon ?? "",
       category: r.category || null,

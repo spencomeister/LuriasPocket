@@ -46,7 +46,7 @@ export default async function WeaponsPage({
       getCachedExclusions(),
       getCachedWeaponFilters(),
       getCachedTranslationMap("weaponType"),
-      getCachedTranslationMap("series"),
+      getCachedTranslationMap("weaponCategory"),
       getCachedTranslationMap("element"),
       auth(),
     ]);
