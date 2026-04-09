@@ -59,10 +59,9 @@ export async function POST(request: NextRequest) {
     itemType?: ItemType;
     itemId?: number;
     quantity?: number;
-    uncap?: number;
   };
 
-  const { itemType, itemId, quantity = 1, uncap = 0 } = body;
+  const { itemType, itemId, quantity = 1 } = body;
 
   if (!itemType || !["character", "summon", "weapon"].includes(itemType)) {
     return Response.json({ error: "itemType が無効です。" }, { status: 400 });
@@ -84,9 +83,8 @@ export async function POST(request: NextRequest) {
       itemType,
       itemId,
       quantity,
-      uncap,
     },
-    update: { quantity, uncap },
+    update: { quantity },
   });
 
   return Response.json({ inventory: record }, { status: 201 });

@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { elementBadge, ELEMENT_EMOJI } from "@/lib/element-colors";
+import { elementBadge, elementGlow, ELEMENT_EMOJI } from "@/lib/element-colors";
+import { getTranslationMap } from "@/lib/series-names";
+import { getWikiImageUrl, getGameAssetUrl } from "@/lib/image-url";
+import { auth } from "@/lib/auth";
+import { AddToInventoryButton } from "@/components/AddToInventoryButton";
+import { FallbackImage } from "@/components/FallbackImage";
+import { SearchBar } from "@/components/SearchBar";
 
 export const metadata = {
   title: "武器一覧 | GBF Checker",
@@ -8,21 +14,43 @@ export const metadata = {
 export default async function WeaponsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ element?: string; weaponType?: string; category?: string; page?: string }>;
+  searchParams: Promise<{
+    element?: string;
+    weaponType?: string;
+    category?: string;
+    rarity?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const params = await searchParams;
-  const element = params.element;
-  const weaponType = params.weaponType;
-  const category = params.category;
+  const { element, weaponType, category, rarity, q } = params;
   const page = Math.max(1, Number(params.page ?? "1"));
   const limit = 48;
   const skip = (page - 1) * limit;
 
-  const where = {
-    ...(element ? { element } : {}),
-    ...(weaponType ? { weaponType } : {}),
-    ...(category ? { category } : {}),
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {};
+  if (element) where.element = element;
+  if (weaponType) where.weaponType = weaponType;
+  if (category) where.category = category;
+  if (rarity) where.rarity = rarity;
+  if (q) {
+    where.OR = [
+      { nameJp: { contains: q } },
+      { name: { contains: q } },
+    ];
+  }
+
+  // システム除外適用
+  const exclusions = await prisma.systemExclusion.findMany();
+  const notConditions: Record<string, string>[] = [];
+  for (const ex of exclusions) {
+    if (ex.type === "category") notConditions.push({ category: ex.value });
+    if (ex.type === "weaponType") notConditions.push({ weaponType: ex.value });
+    if (ex.type === "series") notConditions.push({ category: ex.value });
+  }
+  if (notConditions.length > 0) where.NOT = notConditions;
 
   const [weapons, total] = await Promise.all([
     prisma.weapon.findMany({ where, skip, take: limit, orderBy: { name: "asc" } }),
@@ -31,72 +59,114 @@ export default async function WeaponsPage({
 
   const totalPages = Math.ceil(total / limit);
 
-  const [elements, weaponTypes, categories] = await Promise.all([
+  const [elements, weaponTypes, categories, rarities] = await Promise.all([
     prisma.weapon.findMany({ select: { element: true }, distinct: ["element"] }),
     prisma.weapon.findMany({ select: { weaponType: true }, distinct: ["weaponType"] }),
-    prisma.weapon.findMany({
-      select: { category: true },
-      distinct: ["category"],
-      where: { category: { not: null } },
-    }),
+    prisma.weapon.findMany({ select: { category: true }, distinct: ["category"], where: { category: { not: null } } }),
+    prisma.weapon.findMany({ select: { rarity: true }, distinct: ["rarity"], where: { rarity: { not: null } } }),
   ]);
+  const rarityValues = rarities.map((r) => r.rarity!).sort();
+
+  const [weaponTypeMap, seriesMap, elementMap] = await Promise.all([
+    getTranslationMap("weaponType"),
+    getTranslationMap("series"),
+    getTranslationMap("element"),
+  ]);
+
+  const session = await auth();
+  const ownedIds = new Set<number>();
+  const quantityMap = new Map<number, number>();
+  if (session?.user?.id) {
+    const inv = await prisma.userInventory.findMany({
+      where: { userId: session.user.id, itemType: "weapon" },
+      select: { itemId: true, quantity: true },
+    });
+    inv.forEach((i) => {
+      ownedIds.add(i.itemId);
+      quantityMap.set(i.itemId, i.quantity);
+    });
+  }
 
   const buildUrl = (overrides: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const merged = { element, weaponType, category, ...overrides };
+    const merged = { element, weaponType, category, rarity, q, ...overrides };
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
-    const q = p.toString();
-    return `/weapons${q ? `?${q}` : ""}`;
+    const qs = p.toString();
+    return `/weapons${qs ? `?${qs}` : ""}`;
   };
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">🗡️ 武器一覧</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gradient">武器一覧</h1>
+          <span className="text-sm text-gray-500">{total} 件</span>
+        </div>
+        <SearchBar />
+      </div>
 
       {/* フィルターバー */}
-      <div className="flex flex-wrap gap-3 bg-white p-4 rounded-xl border border-gray-200">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-gray-500">属性:</span>
-          <a href={buildUrl({ element: undefined })} className={filterClass(!element)}>全て</a>
-          {elements.map((e) => (
-            <a key={e.element} href={buildUrl({ element: e.element })} className={filterClass(element === e.element)}>
-              {ELEMENT_EMOJI[e.element]} {e.element}
-            </a>
+      <div className="glass rounded-xl p-4 space-y-3">
+        <FilterRow label="レアリティ">
+          <FilterChip href={buildUrl({ rarity: undefined })} active={!rarity}>全て</FilterChip>
+          {rarityValues.map((r) => (
+            <FilterChip key={r} href={buildUrl({ rarity: r })} active={rarity === r}>{r}</FilterChip>
           ))}
-        </div>
+        </FilterRow>
+
+        <FilterRow label="属性">
+          <FilterChip href={buildUrl({ element: undefined })} active={!element}>全て</FilterChip>
+          {elements.map((e) => (
+            <FilterChip key={e.element} href={buildUrl({ element: e.element })} active={element === e.element}>
+              {ELEMENT_EMOJI[e.element]} {elementMap[e.element.toLowerCase()] ?? e.element}
+            </FilterChip>
+          ))}
+        </FilterRow>
+
         {weaponTypes.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-medium text-gray-500">武器種:</span>
-            <a href={buildUrl({ weaponType: undefined })} className={filterClass(!weaponType)}>全て</a>
+          <FilterRow label="武器種">
+            <FilterChip href={buildUrl({ weaponType: undefined })} active={!weaponType}>全て</FilterChip>
             {weaponTypes.map((w) => (
-              <a key={w.weaponType} href={buildUrl({ weaponType: w.weaponType })} className={filterClass(weaponType === w.weaponType)}>
-                {w.weaponType}
-              </a>
+              <FilterChip key={w.weaponType} href={buildUrl({ weaponType: w.weaponType })} active={weaponType === w.weaponType}>
+                {weaponTypeMap[w.weaponType.toLowerCase()] ?? w.weaponType}
+              </FilterChip>
             ))}
-          </div>
+          </FilterRow>
         )}
+
         {categories.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-medium text-gray-500">カテゴリ:</span>
-            <a href={buildUrl({ category: undefined })} className={filterClass(!category)}>全て</a>
+          <FilterRow label="カテゴリ">
+            <FilterChip href={buildUrl({ category: undefined })} active={!category}>全て</FilterChip>
             {categories.map((c) => (
-              <a key={c.category} href={buildUrl({ category: c.category ?? undefined })} className={filterClass(category === c.category)}>
-                {c.category}
-              </a>
+              <FilterChip key={c.category} href={buildUrl({ category: c.category ?? undefined })} active={category === c.category}>
+                {seriesMap[(c.category ?? "").toLowerCase()] ?? c.category}
+              </FilterChip>
             ))}
-          </div>
+          </FilterRow>
         )}
       </div>
 
-      <p className="text-sm text-gray-500">
-        {total} 件中 {skip + 1}〜{Math.min(skip + limit, total)} 件を表示
-      </p>
-
+      {/* テーブル */}
       {weapons.length === 0 ? (
-        <p className="text-gray-400 text-center py-16">該当する武器が見つかりません。</p>
+        <div className="glass rounded-xl text-center py-16">
+          <p className="text-gray-500">該当する武器が見つかりません。</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {weapons.map((w) => {
+        <div className="glass rounded-xl overflow-hidden">
+          <div className="hidden sm:grid sm:grid-cols-[80px_1fr_80px_80px_100px_1fr_48px] gap-3 px-4 py-2 text-xs font-medium text-gray-500 border-b border-white/5">
+            <span />
+            <span>名前</span>
+            <span>属性</span>
+            <span>武器種</span>
+            <span>カテゴリ</span>
+            <span>スキル</span>
+            <span />
+          </div>
+
+          {weapons.map((w, i) => {
+            const wikiUrl = getWikiImageUrl(w.imageUrl);
+            const assetUrl = getGameAssetUrl("weapon", w.gameId);
+            const hasImage = wikiUrl || assetUrl;
             const skills: string[] = (() => {
               try { return JSON.parse(w.skills ?? "[]"); } catch { return []; }
             })();
@@ -104,33 +174,66 @@ export default async function WeaponsPage({
             return (
               <div
                 key={w.id}
-                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                style={{ "--stagger": i } as React.CSSProperties}
+                className={`
+                  animate-fade-slide-up
+                  grid grid-cols-[80px_1fr_auto] sm:grid-cols-[80px_1fr_80px_80px_100px_1fr_48px]
+                  gap-3 items-center px-4 py-2
+                  border-b border-white/5 last:border-b-0
+                  glass-hover transition-all
+                  ${elementGlow(w.element)}
+                  ${ownedIds.has(w.id) ? "bg-indigo-500/5" : ""}
+                `}
               >
-                {w.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={w.imageUrl} alt={w.name} className="w-full aspect-square object-cover" loading="lazy" />
+                {/* サムネイル（横長） */}
+                {hasImage ? (
+                  <FallbackImage
+                    src={wikiUrl}
+                    fallbackSrc={assetUrl}
+                    alt={w.nameJp ?? w.name}
+                    className="w-20 h-11 rounded object-contain bg-white/5"
+                    placeholderClassName="w-20 h-11 rounded bg-white/5 flex items-center justify-center text-lg"
+                    placeholderEmoji={ELEMENT_EMOJI[w.element] ?? "🗡️"}
+                  />
                 ) : (
-                  <div className="w-full aspect-square bg-gray-100 flex items-center justify-center text-3xl">
+                  <div className="w-20 h-11 rounded bg-white/5 flex items-center justify-center text-lg">
                     {ELEMENT_EMOJI[w.element] ?? "🗡️"}
                   </div>
                 )}
-                <div className="p-2">
-                  <p className="font-medium text-xs truncate" title={w.name}>{w.name}</p>
-                  {w.nameJp && <p className="text-xs text-gray-400 truncate">{w.nameJp}</p>}
-                  <div className="mt-1 flex gap-1 flex-wrap">
-                    <span className={`text-xs px-1.5 py-0.5 rounded border ${elementBadge(w.element)}`}>
-                      {w.element}
-                    </span>
-                    <span className="text-xs px-1.5 py-0.5 rounded border bg-gray-50 text-gray-600 border-gray-200">
-                      {w.weaponType}
-                    </span>
+
+                {/* 名前（日本語主軸） */}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold truncate">{w.nameJp || w.name}</p>
+                    {ownedIds.has(w.id) && <span className="text-xs text-indigo-400">✓</span>}
+                    {(quantityMap.get(w.id) ?? 0) > 1 && (
+                      <span className="text-xs text-indigo-300 font-bold">×{quantityMap.get(w.id)}</span>
+                    )}
                   </div>
-                  {skills.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-1 truncate" title={skills.join(", ")}>
-                      {skills[0]}
-                    </p>
+                  {w.nameJp && <p className="text-xs text-gray-500 truncate">{w.name}</p>}
+                </div>
+
+                <span className={`text-xs px-1.5 py-0.5 rounded border w-fit ${elementBadge(w.element)}`}>
+                  {ELEMENT_EMOJI[w.element]} {elementMap[w.element.toLowerCase()] ?? w.element}
+                </span>
+
+                <span className="hidden sm:block text-xs text-gray-400">
+                  {weaponTypeMap[w.weaponType.toLowerCase()] ?? w.weaponType}
+                </span>
+
+                <span className="hidden sm:block text-xs text-gray-500">
+                  {w.category ? (seriesMap[w.category.toLowerCase()] ?? w.category) : "—"}
+                </span>
+
+                <div className="hidden sm:block min-w-0">
+                  {skills.length > 0 ? (
+                    <p className="text-xs text-gray-400 truncate" title={skills.join(", ")}>{skills[0]}</p>
+                  ) : (
+                    <span className="text-xs text-gray-600">—</span>
                   )}
                 </div>
+
+                <AddToInventoryButton itemType="weapon" itemId={w.id} itemName={w.nameJp ?? w.name} owned={ownedIds.has(w.id)} currentQuantity={quantityMap.get(w.id) ?? 1} />
               </div>
             );
           })}
@@ -138,36 +241,53 @@ export default async function WeaponsPage({
       )}
 
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          {page > 1 && (
-            <a href={buildUrl({ page: String(page - 1) })} className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 text-sm">
-              ← 前へ
-            </a>
-          )}
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
-            <a
-              key={p}
-              href={buildUrl({ page: p > 1 ? String(p) : undefined })}
-              className={`px-3 py-1 rounded border text-sm ${p === page ? "bg-indigo-600 text-white border-indigo-600" : "border-gray-300 hover:bg-gray-100"}`}
-            >
-              {p}
-            </a>
-          ))}
-          {page < totalPages && (
-            <a href={buildUrl({ page: String(page + 1) })} className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 text-sm">
-              次へ →
-            </a>
-          )}
-        </div>
+        <Pagination current={page} total={totalPages} buildUrl={(p) => buildUrl({ page: p > 1 ? String(p) : undefined })} />
       )}
     </div>
   );
 }
 
-function filterClass(active: boolean) {
-  return `text-xs px-2 py-1 rounded border ${
-    active
-      ? "bg-indigo-600 text-white border-indigo-600"
-      : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
-  }`;
+function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-xs font-medium text-gray-500 w-16 shrink-0">{label}:</span>
+      {children}
+    </div>
+  );
+}
+
+function FilterChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className={`text-xs px-2 py-1 rounded border transition-colors ${
+        active ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
+      }`}
+    >
+      {children}
+    </a>
+  );
+}
+
+function Pagination({ current, total, buildUrl }: { current: number; total: number; buildUrl: (p: number) => string }) {
+  const pages = Array.from({ length: Math.min(total, 7) }, (_, i) => {
+    if (total <= 7) return i + 1;
+    if (current <= 4) return i + 1;
+    if (current >= total - 3) return total - 6 + i;
+    return current - 3 + i;
+  });
+
+  return (
+    <div className="flex justify-center gap-2">
+      {current > 1 && (
+        <a href={buildUrl(current - 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">← 前へ</a>
+      )}
+      {pages.map((p) => (
+        <a key={p} href={buildUrl(p)} className={`px-3 py-1 rounded border text-sm transition-colors ${p === current ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : "border-white/10 text-gray-400 hover:bg-white/10"}`}>{p}</a>
+      ))}
+      {current < total && (
+        <a href={buildUrl(current + 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">次へ →</a>
+      )}
+    </div>
+  );
 }

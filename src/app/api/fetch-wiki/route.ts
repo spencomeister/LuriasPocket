@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchCharacters, fetchSummons, fetchWeapons } from "@/lib/wiki-api";
+import { normalizeCategory } from "@/lib/normalize";
 
 /**
  * POST /api/fetch-wiki
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
             rarity: c.rarity,
             element: c.element,
             weapon: c.weapon,
-            category: c.category,
+            category: normalizeCategory(c.category),
             imageUrl: c.imageUrl,
             releaseDate: c.releaseDate,
             obtain: c.obtain,
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
             nameJp: c.nameJp,
             element: c.element,
             weapon: c.weapon,
-            category: c.category,
+            category: normalizeCategory(c.category),
             imageUrl: c.imageUrl,
             releaseDate: c.releaseDate,
             obtain: c.obtain,
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
             name: s.name,
             nameJp: s.nameJp,
             element: s.element,
-            category: s.category,
+            category: normalizeCategory(s.category),
             imageUrl: s.imageUrl,
             mainAura: s.mainAura,
             subAura: s.subAura,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
           update: {
             nameJp: s.nameJp,
             element: s.element,
-            category: s.category,
+            category: normalizeCategory(s.category),
             imageUrl: s.imageUrl,
             mainAura: s.mainAura,
             subAura: s.subAura,
@@ -102,8 +103,8 @@ export async function POST(request: NextRequest) {
             name: w.name,
             nameJp: w.nameJp,
             element: w.element,
-            weaponType: w.weaponType,
-            category: w.category,
+            weaponType: normalizeCategory(w.weaponType) ?? "",
+            category: normalizeCategory(w.category),
             imageUrl: w.imageUrl,
             skills: JSON.stringify(w.skills),
             obtain: w.obtain,
@@ -111,8 +112,8 @@ export async function POST(request: NextRequest) {
           update: {
             nameJp: w.nameJp,
             element: w.element,
-            weaponType: w.weaponType,
-            category: w.category,
+            weaponType: normalizeCategory(w.weaponType) ?? "",
+            category: normalizeCategory(w.category),
             imageUrl: w.imageUrl,
             skills: JSON.stringify(w.skills),
             obtain: w.obtain,

@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function SignInPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export default function SignInPage() {
     setLoading(true);
 
     const res = await signIn("credentials", {
-      email,
+      loginId,
       password,
       redirect: false,
     });
@@ -26,7 +26,7 @@ export default function SignInPage() {
     setLoading(false);
 
     if (res?.error) {
-      setError("メールアドレスまたはパスワードが正しくありません。");
+      setError("ログインIDまたはパスワードが正しくありません。");
     } else {
       router.push("/dashboard");
       router.refresh();
@@ -34,44 +34,46 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-16">
-      <h1 className="text-2xl font-bold mb-6 text-center">ログイン</h1>
-      <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 space-y-4 shadow-sm">
+    <div className="max-w-sm mx-auto mt-16 animate-fade-slide-up">
+      <h1 className="text-2xl font-bold mb-6 text-center text-gradient">ログイン</h1>
+      <form onSubmit={handleSubmit} className="glass rounded-xl p-6 space-y-4 border border-white/10">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm">{error}</div>
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded p-3 text-sm">{error}</div>
         )}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+          <label className="block text-sm font-medium text-gray-400 mb-1">ログインID</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={loginId}
+            onChange={(e) => setLoginId(e.target.value)}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            placeholder="you@example.com"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40"
+            placeholder="your-id"
+            autoComplete="username"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+          <label className="block text-sm font-medium text-gray-400 mb-1">パスワード</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40"
             placeholder="••••••••"
+            autoComplete="current-password"
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
+          className="w-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 py-2 rounded-lg font-medium hover:bg-indigo-500/30 disabled:opacity-50 transition-colors"
         >
           {loading ? "ログイン中..." : "ログイン"}
         </button>
         <p className="text-center text-sm text-gray-500">
           アカウントをお持ちでない方は{" "}
-          <Link href="/auth/signup" className="text-indigo-600 underline">
+          <Link href="/auth/signup" className="text-indigo-400 underline">
             新規登録
           </Link>
         </p>

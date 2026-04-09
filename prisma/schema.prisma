@@ -14,12 +14,14 @@ datasource db {
 
 model Character {
   id          Int      @id @default(autoincrement())
+  gameId      String?
   name        String   @unique
   nameJp      String?
   rarity      String   @default("SSR")
   element     String
   weapon      String
   category    String?
+  series      String?
   imageUrl    String?
   releaseDate String?
   obtain      String?
@@ -31,8 +33,10 @@ model Character {
 
 model Summon {
   id        Int      @id @default(autoincrement())
+  gameId    String?
   name      String   @unique
   nameJp    String?
+  rarity    String?
   element   String
   category  String?
   imageUrl  String?
@@ -44,8 +48,10 @@ model Summon {
 
 model Weapon {
   id         Int      @id @default(autoincrement())
+  gameId     String?
   name       String   @unique
   nameJp     String?
+  rarity     String?
   element    String
   weaponType String
   category   String?
@@ -56,54 +62,57 @@ model Weapon {
   updatedAt  DateTime @updatedAt
 }
 
-// ── Auth Models (NextAuth.js v5) ──────────────────────────────────────────────
+// ── Auth Models ───────────────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  accounts      Account[]
-  sessions      Session[]
+  id            String          @id @default(cuid())
+  loginId       String          @unique
+  name          String
+  password      String
   inventory     UserInventory[]
+  shareTokens   ShareToken[]
+  createdAt     DateTime        @default(now())
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+// ── Admin Config ──────────────────────────────────────────────────────────────
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+model AdminConfig {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
+// ── Share Token (一時URL共有) ─────────────────────────────────────────────────
+
+model ShareToken {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
+// ── Translation (日本語名マッピング) ──────────────────────────────────────────
 
-  @@unique([identifier, token])
+model Translation {
+  id       Int    @id @default(autoincrement())
+  category String // "weaponType" / "series" / "characterType" / "obtain"
+  key      String // 英語値
+  valueJp  String // 日本語訳
+
+  @@unique([category, key])
+}
+
+// ── System Exclusion (システム全体の除外設定) ──────────────────────────────────
+
+model SystemExclusion {
+  id    Int    @id @default(autoincrement())
+  type  String // "category" / "weaponType" / "series"
+  value String // 除外する値
+
+  @@unique([type, value])
 }
 
 // ── Inventory / Usage Tracker ─────────────────────────────────────────────────
@@ -114,7 +123,7 @@ model UserInventory {
   itemType    String   // "character" | "summon" | "weapon"
   itemId      Int
   quantity    Int      @default(1)
-  uncap       Int      @default(0)
+  level       Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

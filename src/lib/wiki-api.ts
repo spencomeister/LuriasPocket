@@ -13,8 +13,17 @@
  *     &format=json
  */
 
+import nodeFetch, { type RequestInit } from "node-fetch";
+import { HttpsProxyAgent } from "https-proxy-agent";
+import { normalizeCategory } from "@/lib/normalize";
+
 const WIKI_API = "https://gbf.wiki/api.php";
 const DEFAULT_LIMIT = 500;
+
+function getProxyAgent(): HttpsProxyAgent<string> | undefined {
+  const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+  return proxy ? new HttpsProxyAgent(proxy) : undefined;
+}
 
 // ── 型定義 ────────────────────────────────────────────────────────────────────
 
@@ -55,7 +64,7 @@ export interface WikiWeapon {
 
 // ── ヘルパー ───────────────────────────────────────────────────────────────────
 
-/** GBF Wiki の Cargo API を呼び出す汎用ヘルパー */
+/** GBF Wiki の Cargo API を呼び出す汎用ヘルパー (1 ページ分) */
 async function cargoQuery(params: Record<string, string>): Promise<Record<string, string>[]> {
   const url = new URL(WIKI_API);
   url.searchParams.set("action", "cargoquery");
@@ -65,10 +74,17 @@ async function cargoQuery(params: Record<string, string>): Promise<Record<string
     url.searchParams.set(k, v);
   }
 
-  const res = await fetch(url.toString(), {
-    headers: { "User-Agent": "gbf-checker/1.0 (https://github.com/spencomeister/gbf-checker)" },
-    next: { revalidate: 3600 }, // 1 時間キャッシュ
-  });
+  const agent = getProxyAgent();
+  const options: RequestInit = {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      Accept: "application/json",
+    },
+    ...(agent ? { agent } : {}),
+  };
+
+  const res = await nodeFetch(url.toString(), options);
 
   if (!res.ok) {
     throw new Error(`GBF Wiki API error: ${res.status} ${res.statusText}`);
@@ -76,6 +92,19 @@ async function cargoQuery(params: Record<string, string>): Promise<Record<string
 
   const json = await res.json() as { cargoquery?: { title: Record<string, string> }[] };
   return (json.cargoquery ?? []).map((item) => item.title);
+}
+
+/** 全ページを自動的に取得する Cargo クエリ */
+async function cargoQueryAll(params: Record<string, string>): Promise<Record<string, string>[]> {
+  const all: Record<string, string>[] = [];
+  let offset = 0;
+  while (true) {
+    const batch = await cargoQuery({ ...params, offset: String(offset) });
+    all.push(...batch);
+    if (batch.length < DEFAULT_LIMIT) break;
+    offset += DEFAULT_LIMIT;
+  }
+  return all;
 }
 
 /** Wiki のアイテム画像 URL を組み立てる */
@@ -86,15 +115,6 @@ function buildImageUrl(fileName: string | undefined): string | null {
   return `https://gbf.wiki/Special:Redirect/file/${encoded}`;
 }
 
-/** パイプ (|) 区切りのリストを配列に変換する */
-function splitPipe(value: string | undefined): string[] {
-  if (!value) return [];
-  return value
-    .split("|")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 // ── キャラクター ──────────────────────────────────────────────────────────────
 
 /**
@@ -102,20 +122,18 @@ function splitPipe(value: string | undefined): string[] {
  * @param rarity 絞り込むレアリティ (デフォルト: "SSR")
  */
 export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> {
-  const rows = await cargoQuery({
+  const rows = await cargoQueryAll({
     tables: "characters",
     fields: [
       "characters.name",
-      "characters.name__full=nameJp",
+      "characters.jpname=nameJp",
       "characters.rarity",
       "characters.element",
       "characters.weapon",
       "characters.type=category",
-      "characters.image",
+      "characters.art1=image",
       "characters.release_date=releaseDate",
       "characters.obtain",
-      "characters.skills",
-      "characters.support_skills=abilities",
     ].join(","),
     where: `characters.rarity="${rarity}"`,
     order_by: "characters.release_date DESC",
@@ -127,12 +145,12 @@ export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> 
     rarity: row["rarity"] ?? rarity,
     element: row["element"] ?? "",
     weapon: row["weapon"] ?? "",
-    category: row["category"] || null,
+    category: normalizeCategory(row["category"]),
     imageUrl: buildImageUrl(row["image"]),
     releaseDate: row["releaseDate"] || null,
     obtain: row["obtain"] || null,
-    skills: splitPipe(row["skills"]),
-    abilities: splitPipe(row["abilities"]),
+    skills: [],
+    abilities: [],
   }));
 }
 
@@ -140,16 +158,16 @@ export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> 
 
 /** GBF Wiki から召喚石一覧を取得する。 */
 export async function fetchSummons(): Promise<WikiSummon[]> {
-  const rows = await cargoQuery({
+  const rows = await cargoQueryAll({
     tables: "summons",
     fields: [
       "summons.name",
-      "summons.name__full=nameJp",
+      "summons.jpname=nameJp",
       "summons.element",
-      "summons.type=category",
-      "summons.image",
-      "summons.main_call=mainAura",
-      "summons.sub_aura=subAura",
+      "summons.series=category",
+      "summons.img_icon=image",
+      "summons.aura1=mainAura",
+      "summons.subaura1=subAura",
     ].join(","),
     order_by: "summons.name ASC",
   });
@@ -158,7 +176,7 @@ export async function fetchSummons(): Promise<WikiSummon[]> {
     name: row["name"] ?? "",
     nameJp: row["nameJp"] || null,
     element: row["element"] ?? "",
-    category: row["category"] || null,
+    category: normalizeCategory(row["category"]),
     imageUrl: buildImageUrl(row["image"]),
     mainAura: row["mainAura"] || null,
     subAura: row["subAura"] || null,
@@ -169,16 +187,17 @@ export async function fetchSummons(): Promise<WikiSummon[]> {
 
 /** GBF Wiki から武器一覧を取得する。 */
 export async function fetchWeapons(): Promise<WikiWeapon[]> {
-  const rows = await cargoQuery({
+  const rows = await cargoQueryAll({
     tables: "weapons",
     fields: [
       "weapons.name",
-      "weapons.name__full=nameJp",
+      "weapons.jpname=nameJp",
       "weapons.element",
       "weapons.type=weaponType",
-      "weapons.obtain_cat=category",
-      "weapons.image",
-      "weapons.skills",
+      "weapons.series=category",
+      "weapons.img_icon=image",
+      "weapons.s1_name=skill1",
+      "weapons.s2_name=skill2",
       "weapons.obtain",
     ].join(","),
     order_by: "weapons.name ASC",
@@ -188,10 +207,10 @@ export async function fetchWeapons(): Promise<WikiWeapon[]> {
     name: row["name"] ?? "",
     nameJp: row["nameJp"] || null,
     element: row["element"] ?? "",
-    weaponType: row["weaponType"] ?? "",
-    category: row["category"] || null,
+    weaponType: normalizeCategory(row["weaponType"]) ?? "",
+    category: normalizeCategory(row["category"]),
     imageUrl: buildImageUrl(row["image"]),
-    skills: splitPipe(row["skills"]),
+    skills: [row["skill1"], row["skill2"]].filter(Boolean) as string[],
     obtain: row["obtain"] || null,
   }));
 }

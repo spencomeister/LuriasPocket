@@ -7,31 +7,34 @@ export function NavBar() {
   const { data: session, status } = useSession();
 
   return (
-    <nav className="bg-indigo-700 text-white shadow">
+    <nav className="glass border-t-0 border-x-0 border-b border-white/10 text-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <Link href="/" className="font-bold text-lg tracking-wide">
+        <Link href="/" className="font-bold text-lg tracking-wide text-gradient">
           GBF Checker
         </Link>
-        <Link href="/characters" className="hover:underline text-sm">
+        <Link href="/characters" className="text-sm text-gray-400 hover:text-white transition-colors">
           キャラクター
         </Link>
-        <Link href="/summons" className="hover:underline text-sm">
+        <Link href="/summons" className="text-sm text-gray-400 hover:text-white transition-colors">
           召喚石
         </Link>
-        <Link href="/weapons" className="hover:underline text-sm">
+        <Link href="/weapons" className="text-sm text-gray-400 hover:text-white transition-colors">
           武器
         </Link>
 
         <div className="ml-auto flex items-center gap-4">
           {status === "loading" ? null : session ? (
             <>
-              <Link href="/dashboard" className="hover:underline text-sm">
+              <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
                 マイ所持
               </Link>
-              <span className="text-sm opacity-80">{session.user?.name ?? session.user?.email}</span>
+              <Link href="/export" className="text-sm text-gray-400 hover:text-white transition-colors">
+                エクスポート
+              </Link>
+              <span className="text-sm text-gray-500">{session.user?.name}</span>
               <button
                 onClick={() => signOut()}
-                className="bg-white text-indigo-700 px-3 py-1 rounded text-sm font-medium hover:bg-indigo-100"
+                className="glass px-3 py-1 rounded text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all"
               >
                 ログアウト
               </button>
@@ -40,13 +43,13 @@ export function NavBar() {
             <>
               <Link
                 href="/auth/signin"
-                className="hover:underline text-sm"
+                className="text-sm text-gray-400 hover:text-white transition-colors"
               >
                 ログイン
               </Link>
               <Link
                 href="/auth/signup"
-                className="bg-white text-indigo-700 px-3 py-1 rounded text-sm font-medium hover:bg-indigo-100"
+                className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-3 py-1 rounded text-sm font-medium hover:bg-indigo-500/30 transition-all"
               >
                 新規登録
               </Link>

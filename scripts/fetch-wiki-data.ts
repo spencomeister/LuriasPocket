@@ -13,6 +13,7 @@ import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { fetchCharacters, fetchSummons, fetchWeapons } from "../src/lib/wiki-api.js";
+import { normalizeCategory } from "../src/lib/normalize.js";
 
 const DB_URL = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
 
@@ -40,7 +41,7 @@ async function main() {
             rarity: c.rarity,
             element: c.element,
             weapon: c.weapon,
-            category: c.category,
+            category: normalizeCategory(c.category),
             imageUrl: c.imageUrl,
             releaseDate: c.releaseDate,
             obtain: c.obtain,
@@ -51,7 +52,7 @@ async function main() {
             nameJp: c.nameJp,
             element: c.element,
             weapon: c.weapon,
-            category: c.category,
+            category: normalizeCategory(c.category),
             imageUrl: c.imageUrl,
             releaseDate: c.releaseDate,
             obtain: c.obtain,
@@ -81,7 +82,7 @@ async function main() {
             name: s.name,
             nameJp: s.nameJp,
             element: s.element,
-            category: s.category,
+            category: normalizeCategory(s.category),
             imageUrl: s.imageUrl,
             mainAura: s.mainAura,
             subAura: s.subAura,
@@ -89,7 +90,7 @@ async function main() {
           update: {
             nameJp: s.nameJp,
             element: s.element,
-            category: s.category,
+            category: normalizeCategory(s.category),
             imageUrl: s.imageUrl,
             mainAura: s.mainAura,
             subAura: s.subAura,
@@ -117,8 +118,8 @@ async function main() {
             name: w.name,
             nameJp: w.nameJp,
             element: w.element,
-            weaponType: w.weaponType,
-            category: w.category,
+            weaponType: normalizeCategory(w.weaponType) ?? "",
+            category: normalizeCategory(w.category),
             imageUrl: w.imageUrl,
             skills: JSON.stringify(w.skills),
             obtain: w.obtain,
@@ -126,8 +127,8 @@ async function main() {
           update: {
             nameJp: w.nameJp,
             element: w.element,
-            weaponType: w.weaponType,
-            category: w.category,
+            weaponType: normalizeCategory(w.weaponType) ?? "",
+            category: normalizeCategory(w.category),
             imageUrl: w.imageUrl,
             skills: JSON.stringify(w.skills),
             obtain: w.obtain,

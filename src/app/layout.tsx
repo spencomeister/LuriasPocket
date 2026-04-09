@@ -15,19 +15,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900 font-sans">
+      <body className="min-h-full flex flex-col bg-[#0b0f1a] text-gray-100 font-sans">
+        {/* subtle radial glow background */}
+        <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_rgba(99,102,241,0.08)_0%,_transparent_60%)]" />
         <Providers>
           <NavBar />
           <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
             {children}
           </main>
-          <footer className="text-center text-xs text-gray-400 py-4 border-t">
+          <footer className="text-center text-xs text-gray-500 py-4 border-t border-white/5">
             データ出典:{" "}
             <a
               href="https://gbf.wiki/"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline"
+              className="underline hover:text-gray-300 transition-colors"
             >
               Granblue Fantasy Wiki
             </a>
