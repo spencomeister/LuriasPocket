@@ -3,11 +3,11 @@
  *
  * 優先順位:
  * 1. Wiki の画像URL（既存の imageUrl フィールド）
- * 2. gameId ベースの公式アセットサーバーURL
+ * 2. gameId ベースの公式アセットサーバーURL (prd-game-a CDN)
  */
 
 const ASSET_BASE =
-  "https://game-a.granbluefantasy.jp/assets/img/sp/assets";
+  "https://prd-game-a-granbluefantasy.akamaized.net/assets/img/sp/assets";
 
 const TYPE_PATH: Record<string, string> = {
   character: "npc",
@@ -21,10 +21,7 @@ export function getImageUrl(
   gameId: string | null | undefined,
 ): string | null {
   if (wikiImageUrl) return wikiImageUrl;
-  if (!gameId) return null;
-
-  const folder = TYPE_PATH[type];
-  return `${ASSET_BASE}/${folder}/m/${gameId}.png`;
+  return getGameAssetUrl(type, gameId);
 }
 
 /** Wiki画像URLのみ返す */
@@ -41,5 +38,7 @@ export function getGameAssetUrl(
 ): string | null {
   if (!gameId) return null;
   const folder = TYPE_PATH[type];
-  return `${ASSET_BASE}/${folder}/m/${gameId}.png`;
+  // キャラクターは _01 サフィックスが必要（基本絵）
+  const suffix = type === "character" ? `${gameId}_01` : gameId;
+  return `${ASSET_BASE}/${folder}/m/${suffix}.jpg`;
 }

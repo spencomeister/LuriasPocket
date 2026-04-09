@@ -29,6 +29,11 @@ model Character {
   abilities   String?  // JSON: string[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([element, rarity])
+  @@index([category])
+  @@index([series])
+  @@index([releaseDate])
 }
 
 model Summon {
@@ -44,6 +49,9 @@ model Summon {
   subAura   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([element, category, rarity])
+  @@index([name])
 }
 
 model Weapon {
@@ -60,6 +68,9 @@ model Weapon {
   obtain     String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([element, weaponType, category, rarity])
+  @@index([name])
 }
 
 // ── Auth Models ───────────────────────────────────────────────────────────────

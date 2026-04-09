@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { elementBadge, elementGlow, ELEMENT_EMOJI } from "@/lib/element-colors";
-import { getTranslationMap } from "@/lib/series-names";
 import { getWikiImageUrl, getGameAssetUrl } from "@/lib/image-url";
 import { auth } from "@/lib/auth";
 import { AddToInventoryButton } from "@/components/AddToInventoryButton";
 import { FallbackImage } from "@/components/FallbackImage";
 import { SearchBar } from "@/components/SearchBar";
+import { FilterBar, Pagination } from "@/components/FilterBar";
+import type { FilterRowConfig } from "@/components/FilterBar";
+import {
+  getCachedTranslationMap,
+  getCachedExclusions,
+  getCachedCharacterFilters,
+} from "@/lib/cached-queries";
 
 export const metadata = {
   title: "キャラクター一覧 | ルリアのぽけっと手帳",
@@ -25,27 +31,50 @@ export default async function CharactersPage({
   }>;
 }) {
   const params = await searchParams;
-  const { element, weapon, category, series, rarity, q } = params;
+  const { q } = params;
+  const elementArr = params.element?.split(",").filter(Boolean) ?? [];
+  const weaponArr = params.weapon?.split(",").filter(Boolean) ?? [];
+  const categoryArr = params.category?.split(",").filter(Boolean) ?? [];
+  const seriesArr = params.series?.split(",").filter(Boolean) ?? [];
+  const rarityArr = params.rarity?.split(",").filter(Boolean) ?? [];
   const page = Math.max(1, Number(params.page ?? "1"));
   const limit = 48;
   const skip = (page - 1) * limit;
 
+  // キャッシュから準静的データを並列取得
+  const [exclusions, filters, weaponTypeMap, seriesMap, charTypeMap, elementMap, session] =
+    await Promise.all([
+      getCachedExclusions(),
+      getCachedCharacterFilters(),
+      getCachedTranslationMap("weaponType"),
+      getCachedTranslationMap("series"),
+      getCachedTranslationMap("characterType"),
+      getCachedTranslationMap("element"),
+      auth(),
+    ]);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
-  if (element) where.element = element;
-  if (weapon) where.weapon = { contains: weapon };
-  if (category) where.category = category;
-  if (series) where.series = series;
-  if (rarity) where.rarity = rarity;
-  if (q) {
+  if (elementArr.length > 0) where.element = elementArr.length === 1 ? elementArr[0] : { in: elementArr };
+  if (weaponArr.length > 0) {
+    // weapon フィールドはカンマ区切り文字列なので contains で OR 検索
     where.OR = [
+      ...(where.OR ?? []),
+      ...weaponArr.map((w) => ({ weapon: { contains: w } })),
+    ];
+  }
+  if (categoryArr.length > 0) where.category = categoryArr.length === 1 ? categoryArr[0] : { in: categoryArr };
+  if (seriesArr.length > 0) where.series = seriesArr.length === 1 ? seriesArr[0] : { in: seriesArr };
+  if (rarityArr.length > 0) where.rarity = rarityArr.length === 1 ? rarityArr[0] : { in: rarityArr };
+  if (q) {
+    const searchOr = [
       { nameJp: { contains: q } },
       { name: { contains: q } },
     ];
+    where.OR = where.OR ? [...where.OR, ...searchOr] : searchOr;
   }
 
   // システム除外適用
-  const exclusions = await prisma.systemExclusion.findMany();
   const notConditions: Record<string, string>[] = [];
   for (const ex of exclusions) {
     if (ex.type === "category") notConditions.push({ category: ex.value });
@@ -53,62 +82,74 @@ export default async function CharactersPage({
   }
   if (notConditions.length > 0) where.NOT = notConditions;
 
-  const [characters, total] = await Promise.all([
+  // メインクエリ + 所持状態を並列取得
+  const inventoryPromise = session?.user?.id
+    ? prisma.userInventory.findMany({
+        where: { userId: session.user.id, itemType: "character" },
+        select: { itemId: true },
+      })
+    : Promise.resolve([]);
+
+  const [characters, total, inventory] = await Promise.all([
     prisma.character.findMany({ where, skip, take: limit, orderBy: { releaseDate: "desc" } }),
     prisma.character.count({ where }),
+    inventoryPromise,
   ]);
 
   const totalPages = Math.ceil(total / limit);
+  const ownedIds = new Set(inventory.map((i) => i.itemId));
 
-  // フィルタ用ユニーク値
-  const [elements, weapons, categories, seriesList] = await Promise.all([
-    prisma.character.findMany({ select: { element: true }, distinct: ["element"] }),
-    prisma.character.findMany({ select: { weapon: true }, distinct: ["weapon"] }),
-    prisma.character.findMany({ select: { category: true }, distinct: ["category"], where: { category: { not: null } } }),
-    prisma.character.findMany({ select: { series: true }, distinct: ["series"], where: { series: { not: null } } }),
-  ]);
+  // フィルター行定義
+  const filterRows: FilterRowConfig[] = [
+    {
+      key: "rarity",
+      label: "レアリティ",
+      options: filters.rarities.map((r) => ({ value: r, label: r })),
+    },
+    {
+      key: "element",
+      label: "属性",
+      options: filters.elements.map((e) => ({
+        value: e,
+        label: `${ELEMENT_EMOJI[e] ?? ""} ${elementMap[e.toLowerCase()] ?? e}`,
+      })),
+    },
+    ...(filters.weapons.length > 0
+      ? [
+          {
+            key: "weapon",
+            label: "武器種",
+            options: filters.weapons.map((w) => ({
+              value: w,
+              label: weaponTypeMap[w.toLowerCase()] ?? w,
+            })),
+          },
+        ]
+      : []),
+    ...(filters.seriesList.length > 0
+      ? [
+          {
+            key: "series",
+            label: "シリーズ",
+            options: filters.seriesList.map((s) => ({
+              value: s,
+              label: seriesMap[s.toLowerCase()] ?? s,
+            })),
+          },
+        ]
+      : []),
+  ];
 
-  // 武器種は個別の値をカンマ分割で抽出
-  const weaponSet = new Set<string>();
-  weapons.forEach((w) =>
-    w.weapon
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .forEach((wt) => weaponSet.add(wt)),
-  );
-  const uniqueWeapons = [...weaponSet].sort();
-
-  // レアリティdistinct
-  const rarities = await prisma.character.findMany({ select: { rarity: true }, distinct: ["rarity"] });
-  const rarityValues = rarities.map((r) => r.rarity).filter(Boolean).sort();
-
-  // 翻訳マップ
-  const [weaponTypeMap, seriesMap, charTypeMap, elementMap] = await Promise.all([
-    getTranslationMap("weaponType"),
-    getTranslationMap("series"),
-    getTranslationMap("characterType"),
-    getTranslationMap("element"),
-  ]);
-
-  // 所持状態
-  const session = await auth();
-  const ownedIds = new Set<number>();
-  if (session?.user?.id) {
-    const inv = await prisma.userInventory.findMany({
-      where: { userId: session.user.id, itemType: "character" },
-      select: { itemId: true },
-    });
-    inv.forEach((i) => ownedIds.add(i.itemId));
-  }
-
-  const buildUrl = (overrides: Record<string, string | undefined>) => {
-    const p = new URLSearchParams();
-    const merged = { element, weapon, category, series, rarity, q, ...overrides };
-    for (const [k, v] of Object.entries(merged)) {
-      if (v) p.set(k, v);
-    }
-    const qs = p.toString();
+  const buildPageUrl = (p: number) => {
+    const sp = new URLSearchParams();
+    if (params.element) sp.set("element", params.element);
+    if (params.weapon) sp.set("weapon", params.weapon);
+    if (params.category) sp.set("category", params.category);
+    if (params.series) sp.set("series", params.series);
+    if (params.rarity) sp.set("rarity", params.rarity);
+    if (q) sp.set("q", q);
+    if (p > 1) sp.set("page", String(p));
+    const qs = sp.toString();
     return `/characters${qs ? `?${qs}` : ""}`;
   };
 
@@ -123,49 +164,7 @@ export default async function CharactersPage({
       </div>
 
       {/* フィルターバー */}
-      <div className="glass rounded-xl p-4 space-y-3">
-        {/* レアリティ */}
-        <FilterRow label="レアリティ">
-          <FilterChip href={buildUrl({ rarity: undefined })} active={!rarity}>全て</FilterChip>
-          {rarityValues.map((r) => (
-            <FilterChip key={r} href={buildUrl({ rarity: r })} active={rarity === r}>{r}</FilterChip>
-          ))}
-        </FilterRow>
-
-        {/* 属性 */}
-        <FilterRow label="属性">
-          <FilterChip href={buildUrl({ element: undefined })} active={!element}>全て</FilterChip>
-          {elements.map((e) => (
-            <FilterChip key={e.element} href={buildUrl({ element: e.element })} active={element === e.element}>
-              {ELEMENT_EMOJI[e.element]} {elementMap[e.element.toLowerCase()] ?? e.element}
-            </FilterChip>
-          ))}
-        </FilterRow>
-
-        {/* 武器種 */}
-        {uniqueWeapons.length > 0 && (
-          <FilterRow label="武器種">
-            <FilterChip href={buildUrl({ weapon: undefined })} active={!weapon}>全て</FilterChip>
-            {uniqueWeapons.map((w) => (
-              <FilterChip key={w} href={buildUrl({ weapon: w })} active={weapon === w}>
-                {weaponTypeMap[w.toLowerCase()] ?? w}
-              </FilterChip>
-            ))}
-          </FilterRow>
-        )}
-
-        {/* シリーズ */}
-        {seriesList.length > 0 && (
-          <FilterRow label="シリーズ">
-            <FilterChip href={buildUrl({ series: undefined })} active={!series}>全て</FilterChip>
-            {seriesList.map((s) => (
-              <FilterChip key={s.series} href={buildUrl({ series: s.series ?? undefined })} active={series === s.series}>
-                {seriesMap[(s.series ?? "").toLowerCase()] ?? s.series}
-              </FilterChip>
-            ))}
-          </FilterRow>
-        )}
-      </div>
+      <FilterBar rows={filterRows} />
 
       {/* カードグリッド */}
       {characters.length === 0 ? (
@@ -273,85 +272,10 @@ export default async function CharactersPage({
 
       {/* ページネーション */}
       {totalPages > 1 && (
-        <Pagination current={page} total={totalPages} buildUrl={(p) => buildUrl({ page: p > 1 ? String(p) : undefined })} />
+        <Pagination current={page} total={totalPages} buildUrl={buildPageUrl} />
       )}
     </div>
   );
 }
 
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs font-medium text-gray-500 w-16 shrink-0">{label}:</span>
-      {children}
-    </div>
-  );
-}
-
-function FilterChip({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      className={`text-xs px-2 py-1 rounded border transition-colors ${
-        active
-          ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
-          : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
-      }`}
-    >
-      {children}
-    </a>
-  );
-}
-
-function Pagination({
-  current,
-  total,
-  buildUrl,
-}: {
-  current: number;
-  total: number;
-  buildUrl: (p: number) => string;
-}) {
-  const pages = Array.from({ length: Math.min(total, 7) }, (_, i) => {
-    if (total <= 7) return i + 1;
-    if (current <= 4) return i + 1;
-    if (current >= total - 3) return total - 6 + i;
-    return current - 3 + i;
-  });
-
-  return (
-    <div className="flex justify-center gap-2">
-      {current > 1 && (
-        <a href={buildUrl(current - 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">
-          ← 前へ
-        </a>
-      )}
-      {pages.map((p) => (
-        <a
-          key={p}
-          href={buildUrl(p)}
-          className={`px-3 py-1 rounded border text-sm transition-colors ${
-            p === current
-              ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
-              : "border-white/10 text-gray-400 hover:bg-white/10"
-          }`}
-        >
-          {p}
-        </a>
-      ))}
-      {current < total && (
-        <a href={buildUrl(current + 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">
-          次へ →
-        </a>
-      )}
-    </div>
-  );
-}
+// FilterRow, FilterChip, Pagination は @/components/FilterBar から import

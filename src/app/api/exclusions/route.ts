@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { normalizeCategory } from "@/lib/normalize";
 import { requireAdmin } from "@/lib/admin-guard";
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
     create: { type, value: normalizedValue },
     update: {},
   });
+  revalidateTag("exclusions", "max");
   return Response.json(exclusion);
 }
 
@@ -46,5 +48,6 @@ export async function DELETE(request: NextRequest) {
   }
   const normalizedValue = normalizeCategory(value) ?? value;
   await prisma.systemExclusion.deleteMany({ where: { type, value: normalizedValue } });
+  revalidateTag("exclusions", "max");
   return Response.json({ ok: true });
 }

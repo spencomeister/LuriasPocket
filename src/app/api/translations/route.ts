@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-guard";
 
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     create: { category, key, valueJp },
     update: { valueJp },
   });
+  revalidateTag("translations", "max");
   return Response.json(translation);
 }
 
@@ -55,6 +57,7 @@ export async function PUT(request: NextRequest) {
     where: { id },
     data: { valueJp },
   });
+  revalidateTag("translations", "max");
   return Response.json(translation);
 }
 
@@ -68,5 +71,6 @@ export async function DELETE(request: NextRequest) {
     return Response.json({ error: "id is required" }, { status: 400 });
   }
   await prisma.translation.delete({ where: { id } });
+  revalidateTag("translations", "max");
   return Response.json({ ok: true });
 }

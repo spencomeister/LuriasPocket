@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { elementBadge, elementGlow, ELEMENT_EMOJI } from "@/lib/element-colors";
-import { getTranslationMap } from "@/lib/series-names";
 import { getWikiImageUrl, getGameAssetUrl } from "@/lib/image-url";
 import { auth } from "@/lib/auth";
 import { AddToInventoryButton } from "@/components/AddToInventoryButton";
 import { FallbackImage } from "@/components/FallbackImage";
 import { SearchBar } from "@/components/SearchBar";
+import { FilterBar, Pagination } from "@/components/FilterBar";
+import type { FilterRowConfig } from "@/components/FilterBar";
+import {
+  getCachedTranslationMap,
+  getCachedExclusions,
+  getCachedSummonFilters,
+} from "@/lib/cached-queries";
 
 export const metadata = {
   title: "召喚石一覧 | ルリアのぽけっと手帳",
@@ -23,16 +29,28 @@ export default async function SummonsPage({
   }>;
 }) {
   const params = await searchParams;
-  const { element, category, rarity, q } = params;
+  const { q } = params;
+  const elementArr = params.element?.split(",").filter(Boolean) ?? [];
+  const categoryArr = params.category?.split(",").filter(Boolean) ?? [];
+  const rarityArr = params.rarity?.split(",").filter(Boolean) ?? [];
   const page = Math.max(1, Number(params.page ?? "1"));
   const limit = 48;
   const skip = (page - 1) * limit;
 
+  // キャッシュから準静的データを並列取得
+  const [exclusions, filters, seriesMap, elementMap, session] = await Promise.all([
+    getCachedExclusions(),
+    getCachedSummonFilters(),
+    getCachedTranslationMap("series"),
+    getCachedTranslationMap("element"),
+    auth(),
+  ]);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
-  if (element) where.element = element;
-  if (category) where.category = category;
-  if (rarity) where.rarity = rarity;
+  if (elementArr.length > 0) where.element = elementArr.length === 1 ? elementArr[0] : { in: elementArr };
+  if (categoryArr.length > 0) where.category = categoryArr.length === 1 ? categoryArr[0] : { in: categoryArr };
+  if (rarityArr.length > 0) where.rarity = rarityArr.length === 1 ? rarityArr[0] : { in: rarityArr };
   if (q) {
     where.OR = [
       { nameJp: { contains: q } },
@@ -41,47 +59,66 @@ export default async function SummonsPage({
   }
 
   // システム除外適用
-  const exclusions = await prisma.systemExclusion.findMany();
   const notConditions: Record<string, string>[] = [];
   for (const ex of exclusions) {
     if (ex.type === "category") notConditions.push({ category: ex.value });
   }
   if (notConditions.length > 0) where.NOT = notConditions;
 
-  const [summons, total] = await Promise.all([
+  // メインクエリ + 所持状態を並列取得
+  const inventoryPromise = session?.user?.id
+    ? prisma.userInventory.findMany({
+        where: { userId: session.user.id, itemType: "summon" },
+        select: { itemId: true },
+      })
+    : Promise.resolve([]);
+
+  const [summons, total, inventory] = await Promise.all([
     prisma.summon.findMany({ where, skip, take: limit, orderBy: { name: "asc" } }),
     prisma.summon.count({ where }),
+    inventoryPromise,
   ]);
 
   const totalPages = Math.ceil(total / limit);
+  const ownedIds = new Set(inventory.map((i) => i.itemId));
 
-  const [elements, categories, rarities] = await Promise.all([
-    prisma.summon.findMany({ select: { element: true }, distinct: ["element"] }),
-    prisma.summon.findMany({ select: { category: true }, distinct: ["category"], where: { category: { not: null } } }),
-    prisma.summon.findMany({ select: { rarity: true }, distinct: ["rarity"], where: { rarity: { not: null } } }),
-  ]);
-  const rarityValues = rarities.map((r) => r.rarity!).sort();
+  // フィルター行定義
+  const filterRows: FilterRowConfig[] = [
+    {
+      key: "rarity",
+      label: "レアリティ",
+      options: filters.rarities.map((r) => ({ value: r, label: r })),
+    },
+    {
+      key: "element",
+      label: "属性",
+      options: filters.elements.map((e) => ({
+        value: e,
+        label: `${ELEMENT_EMOJI[e] ?? ""} ${elementMap[e.toLowerCase()] ?? e}`,
+      })),
+    },
+    ...(filters.categories.length > 0
+      ? [
+          {
+            key: "category",
+            label: "カテゴリ",
+            options: filters.categories.map((c) => ({
+              value: c,
+              label: seriesMap[c.toLowerCase()] ?? c,
+            })),
+          },
+        ]
+      : []),
+  ];
 
-  const [seriesMap, elementMap] = await Promise.all([
-    getTranslationMap("series"),
-    getTranslationMap("element"),
-  ]);
-
-  const session = await auth();
-  const ownedIds = new Set<number>();
-  if (session?.user?.id) {
-    const inv = await prisma.userInventory.findMany({
-      where: { userId: session.user.id, itemType: "summon" },
-      select: { itemId: true },
-    });
-    inv.forEach((i) => ownedIds.add(i.itemId));
-  }
-
-  const buildUrl = (overrides: Record<string, string | undefined>) => {
-    const p = new URLSearchParams();
-    const merged = { element, category, rarity, q, ...overrides };
-    for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
-    const qs = p.toString();
+  const buildPageUrl = (p: number) => {
+    const sp = new URLSearchParams();
+    if (params.element) sp.set("element", params.element);
+    if (params.category) sp.set("category", params.category);
+    if (params.rarity) sp.set("rarity", params.rarity);
+    if (q) sp.set("q", q);
+    if (p > 1) sp.set("page", String(p));
+    const qs = sp.toString();
     return `/summons${qs ? `?${qs}` : ""}`;
   };
 
@@ -96,34 +133,7 @@ export default async function SummonsPage({
       </div>
 
       {/* フィルターバー */}
-      <div className="glass rounded-xl p-4 space-y-3">
-        <FilterRow label="レアリティ">
-          <FilterChip href={buildUrl({ rarity: undefined })} active={!rarity}>全て</FilterChip>
-          {rarityValues.map((r) => (
-            <FilterChip key={r} href={buildUrl({ rarity: r })} active={rarity === r}>{r}</FilterChip>
-          ))}
-        </FilterRow>
-
-        <FilterRow label="属性">
-          <FilterChip href={buildUrl({ element: undefined })} active={!element}>全て</FilterChip>
-          {elements.map((e) => (
-            <FilterChip key={e.element} href={buildUrl({ element: e.element })} active={element === e.element}>
-              {ELEMENT_EMOJI[e.element]} {elementMap[e.element.toLowerCase()] ?? e.element}
-            </FilterChip>
-          ))}
-        </FilterRow>
-
-        {categories.length > 0 && (
-          <FilterRow label="カテゴリ">
-            <FilterChip href={buildUrl({ category: undefined })} active={!category}>全て</FilterChip>
-            {categories.map((c) => (
-              <FilterChip key={c.category} href={buildUrl({ category: c.category ?? undefined })} active={category === c.category}>
-                {seriesMap[(c.category ?? "").toLowerCase()] ?? c.category}
-              </FilterChip>
-            ))}
-          </FilterRow>
-        )}
-      </div>
+      <FilterBar rows={filterRows} />
 
       {/* テーブル */}
       {summons.length === 0 ? (
@@ -206,53 +216,10 @@ export default async function SummonsPage({
       )}
 
       {totalPages > 1 && (
-        <Pagination current={page} total={totalPages} buildUrl={(p) => buildUrl({ page: p > 1 ? String(p) : undefined })} />
+        <Pagination current={page} total={totalPages} buildUrl={buildPageUrl} />
       )}
     </div>
   );
 }
 
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs font-medium text-gray-500 w-16 shrink-0">{label}:</span>
-      {children}
-    </div>
-  );
-}
-
-function FilterChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <a
-      href={href}
-      className={`text-xs px-2 py-1 rounded border transition-colors ${
-        active ? "bg-sky-500/20 text-sky-300 border-sky-500/40" : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
-      }`}
-    >
-      {children}
-    </a>
-  );
-}
-
-function Pagination({ current, total, buildUrl }: { current: number; total: number; buildUrl: (p: number) => string }) {
-  const pages = Array.from({ length: Math.min(total, 7) }, (_, i) => {
-    if (total <= 7) return i + 1;
-    if (current <= 4) return i + 1;
-    if (current >= total - 3) return total - 6 + i;
-    return current - 3 + i;
-  });
-
-  return (
-    <div className="flex justify-center gap-2">
-      {current > 1 && (
-        <a href={buildUrl(current - 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">← 前へ</a>
-      )}
-      {pages.map((p) => (
-        <a key={p} href={buildUrl(p)} className={`px-3 py-1 rounded border text-sm transition-colors ${p === current ? "bg-sky-500/20 text-sky-300 border-sky-500/40" : "border-white/10 text-gray-400 hover:bg-white/10"}`}>{p}</a>
-      ))}
-      {current < total && (
-        <a href={buildUrl(current + 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">次へ →</a>
-      )}
-    </div>
-  );
-}
+// FilterRow, FilterChip, Pagination は @/components/FilterBar から import
