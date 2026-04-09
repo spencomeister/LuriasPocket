@@ -8,7 +8,7 @@ import { FallbackImage } from "@/components/FallbackImage";
 import { SearchBar } from "@/components/SearchBar";
 
 export const metadata = {
-  title: "召喚石一覧 | GBF Checker",
+  title: "召喚石一覧 | ルリアのぽけっと手帳",
 };
 
 export default async function SummonsPage({
@@ -157,7 +157,7 @@ export default async function SummonsPage({
                   border-b border-white/5 last:border-b-0
                   glass-hover transition-all
                   ${elementGlow(s.element)}
-                  ${ownedIds.has(s.id) ? "bg-indigo-500/5" : ""}
+                  ${ownedIds.has(s.id) ? "bg-sky-500/5" : ""}
                 `}
               >
                 {/* サムネイル（横長） */}
@@ -180,7 +180,7 @@ export default async function SummonsPage({
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-bold truncate">{s.nameJp || s.name}</p>
-                    {ownedIds.has(s.id) && <span className="text-xs text-indigo-400">✓</span>}
+                    {ownedIds.has(s.id) && <span className="text-xs text-sky-400">✓</span>}
                   </div>
                   {s.nameJp && <p className="text-xs text-gray-500 truncate">{s.name}</p>}
                 </div>
@@ -226,7 +226,7 @@ function FilterChip({ href, active, children }: { href: string; active: boolean;
     <a
       href={href}
       className={`text-xs px-2 py-1 rounded border transition-colors ${
-        active ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
+        active ? "bg-sky-500/20 text-sky-300 border-sky-500/40" : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
       }`}
     >
       {children}
@@ -248,7 +248,7 @@ function Pagination({ current, total, buildUrl }: { current: number; total: numb
         <a href={buildUrl(current - 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">← 前へ</a>
       )}
       {pages.map((p) => (
-        <a key={p} href={buildUrl(p)} className={`px-3 py-1 rounded border text-sm transition-colors ${p === current ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" : "border-white/10 text-gray-400 hover:bg-white/10"}`}>{p}</a>
+        <a key={p} href={buildUrl(p)} className={`px-3 py-1 rounded border text-sm transition-colors ${p === current ? "bg-sky-500/20 text-sky-300 border-sky-500/40" : "border-white/10 text-gray-400 hover:bg-white/10"}`}>{p}</a>
       ))}
       {current < total && (
         <a href={buildUrl(current + 1)} className="px-3 py-1 rounded border border-white/10 hover:bg-white/10 text-sm text-gray-400 transition-colors">次へ →</a>

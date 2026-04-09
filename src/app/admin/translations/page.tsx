@@ -117,7 +117,7 @@ export default function TranslationsPage() {
             onClick={() => setActiveCategory(cat.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeCategory === cat.key
-                ? "bg-indigo-500/30 text-indigo-200 border border-indigo-500/50"
+                ? "bg-sky-500/30 text-sky-200 border border-sky-500/50"
                 : "glass border border-white/10 text-gray-400 hover:text-gray-200"
             }`}
           >
@@ -135,14 +135,14 @@ export default function TranslationsPage() {
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
             placeholder="Key (EN)"
-            className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50"
+            className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-sky-500/50"
           />
           <input
             type="text"
             value={newValueJp}
             onChange={(e) => setNewValueJp(e.target.value)}
             placeholder="日本語訳"
-            className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50"
+            className="flex-1 bg-white/5 border border-white/10 rounded px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-sky-500/50"
           />
           <button
             onClick={handleAdd}
@@ -192,7 +192,7 @@ export default function TranslationsPage() {
                         onKeyDown={(e) =>
                           e.key === "Enter" && handleUpdate(t.id)
                         }
-                        className="bg-white/5 border border-indigo-500/50 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none w-full"
+                        className="bg-white/5 border border-sky-500/50 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none w-full"
                         autoFocus
                       />
                     ) : (
@@ -223,7 +223,7 @@ export default function TranslationsPage() {
                               setEditId(t.id);
                               setEditValue(t.valueJp);
                             }}
-                            className="text-xs text-indigo-400 hover:text-indigo-300"
+                            className="text-xs text-sky-400 hover:text-sky-300"
                           >
                             編集
                           </button>

@@ -4,10 +4,10 @@ export default function HomePage() {
   return (
     <div className="space-y-10">
       <section className="text-center py-16">
-        <h1 className="text-5xl font-bold text-gradient mb-4 animate-fade-slide-up">GBF Checker</h1>
+        <h1 className="text-5xl font-bold text-gradient mb-4 animate-fade-slide-up font-title">ルリアのぽけっと手帳</h1>
         <p className="text-gray-400 text-lg max-w-xl mx-auto animate-fade-slide-up" style={{ "--stagger": 1 } as React.CSSProperties}>
-          グランブルーファンタジーのキャラクター・召喚石・武器の所持状況を管理するチェッカーです。
-          GBF Wiki のデータを元に、属性・武器種・カテゴリでフィルタリングできます。
+          グランブルーファンタジーのキャラクター・召喚石・武器の所持状況をかんたん管理♪
+          属性・武器種・カテゴリでフィルタリングできます。
         </p>
       </section>
 
@@ -25,7 +25,7 @@ export default function HomePage() {
         <div className="flex justify-center gap-4">
           <Link
             href="/auth/signup"
-            className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-6 py-2 rounded-lg hover:bg-indigo-500/30 font-medium transition-colors"
+            className="bg-sky-500/20 text-sky-300 border border-sky-500/40 px-6 py-2 rounded-lg hover:bg-sky-500/30 font-medium transition-colors"
           >
             新規登録
           </Link>

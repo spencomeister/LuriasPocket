@@ -237,7 +237,7 @@ export default function AdminImportPage() {
       <button
         onClick={run}
         disabled={running}
-        className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 disabled:opacity-50 px-6 py-2 rounded font-medium mb-8 transition-colors"
+        className="bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 disabled:opacity-50 px-6 py-2 rounded font-medium mb-8 transition-colors"
       >
         {running ? "インポート中..." : "インポート開始"}
       </button>

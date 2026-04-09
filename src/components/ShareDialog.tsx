@@ -86,7 +86,7 @@ export function ShareDialog({ open, onClose }: { open: boolean; onClose: () => v
                   onClick={() => setDuration(d.key)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
                     duration === d.key
-                      ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+                      ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
                       : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
                   }`}
                 >
@@ -97,7 +97,7 @@ export function ShareDialog({ open, onClose }: { open: boolean; onClose: () => v
             <button
               onClick={handleCreate}
               disabled={loading}
-              className="w-full py-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 font-medium transition-colors disabled:opacity-50"
+              className="w-full py-2 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 font-medium transition-colors disabled:opacity-50"
             >
               {loading ? "発行中..." : "共有リンクを発行"}
             </button>

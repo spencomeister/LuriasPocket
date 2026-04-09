@@ -47,7 +47,7 @@ export default function SignInPage() {
             value={loginId}
             onChange={(e) => setLoginId(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500/40"
             placeholder="your-id"
             autoComplete="username"
           />
@@ -59,7 +59,7 @@ export default function SignInPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40"
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500/40"
             placeholder="••••••••"
             autoComplete="current-password"
           />
@@ -67,13 +67,13 @@ export default function SignInPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 py-2 rounded-lg font-medium hover:bg-indigo-500/30 disabled:opacity-50 transition-colors"
+          className="w-full bg-sky-500/20 text-sky-300 border border-sky-500/40 py-2 rounded-lg font-medium hover:bg-sky-500/30 disabled:opacity-50 transition-colors"
         >
           {loading ? "ログイン中..." : "ログイン"}
         </button>
         <p className="text-center text-sm text-gray-500">
           アカウントをお持ちでない方は{" "}
-          <Link href="/auth/signup" className="text-indigo-400 underline">
+          <Link href="/auth/signup" className="text-sky-400 underline">
             新規登録
           </Link>
         </p>

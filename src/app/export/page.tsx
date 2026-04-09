@@ -38,7 +38,7 @@ export default function ExportPage() {
           <p className="text-gray-400 mb-4">エクスポートにはログインが必要です。</p>
           <Link
             href="/auth/signin"
-            className="inline-block px-6 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 transition-colors text-sm font-medium"
+            className="inline-block px-6 py-2 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 transition-colors text-sm font-medium"
           >
             ログイン
           </Link>
@@ -67,7 +67,7 @@ export default function ExportPage() {
               onClick={() => setType(t.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
                 type === t.key
-                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+                  ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
                   : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
               }`}
             >
@@ -87,7 +87,7 @@ export default function ExportPage() {
               onClick={() => setFormat(f.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
                 format === f.key
-                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+                  ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
                   : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
               }`}
             >
@@ -101,7 +101,7 @@ export default function ExportPage() {
       <a
         href={downloadUrl}
         download
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 transition-colors text-sm font-medium"
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 transition-colors text-sm font-medium"
       >
         <span>📥</span>
         <span>ダウンロード ({TYPES.find((t) => t.key === type)?.label} / {format.toUpperCase()})</span>

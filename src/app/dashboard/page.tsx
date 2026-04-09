@@ -9,7 +9,7 @@ import { ShareButton } from "@/components/ShareButton";
 import Link from "next/link";
 
 export const metadata = {
-  title: "マイ所持 | GBF Checker",
+  title: "マイ所持 | ルリアのぽけっと手帳",
 };
 
 export default async function DashboardPage() {
@@ -68,9 +68,9 @@ export default async function DashboardPage() {
         <div className="glass rounded-xl text-center py-16">
           <p className="text-gray-500 mb-4">所持アイテムがまだ登録されていません。</p>
           <p className="text-sm text-gray-500">
-            <Link href="/characters" className="text-indigo-400 underline">キャラクター</Link>・
-            <Link href="/summons" className="text-indigo-400 underline">召喚石</Link>・
-            <Link href="/weapons" className="text-indigo-400 underline">武器</Link>
+            <Link href="/characters" className="text-sky-400 underline">キャラクター</Link>・
+            <Link href="/summons" className="text-sky-400 underline">召喚石</Link>・
+            <Link href="/weapons" className="text-sky-400 underline">武器</Link>
             ページで所持を登録できます。
           </p>
         </div>
@@ -132,7 +132,7 @@ function StatCard({ label, count, href }: { label: string; count: number; href: 
       href={href}
       className="glass glass-hover rounded-xl p-4 text-center border border-white/10 transition-all"
     >
-      <p className="text-3xl font-bold text-indigo-400">{count}</p>
+      <p className="text-3xl font-bold text-sky-400">{count}</p>
       <p className="text-sm text-gray-500 mt-1">{label}</p>
     </Link>
   );
@@ -191,7 +191,7 @@ function InventoryRow({
         {ELEMENT_EMOJI[element]} {elementMap[element.toLowerCase()] ?? element}
       </span>
       {quantity && quantity > 1 ? (
-        <span className="text-xs text-indigo-300 font-bold">×{quantity}</span>
+        <span className="text-xs text-sky-300 font-bold">×{quantity}</span>
       ) : (
         <span className="text-xs text-gray-600">—</span>
       )}

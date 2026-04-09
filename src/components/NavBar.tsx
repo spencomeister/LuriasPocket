@@ -9,8 +9,8 @@ export function NavBar() {
   return (
     <nav className="glass border-t-0 border-x-0 border-b border-white/10 text-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <Link href="/" className="font-bold text-lg tracking-wide text-gradient">
-          GBF Checker
+        <Link href="/" className="font-bold text-lg tracking-wide text-gradient font-title">
+          ルリアのぽけっと手帳
         </Link>
         <Link href="/characters" className="text-sm text-gray-400 hover:text-white transition-colors">
           キャラクター
@@ -49,7 +49,7 @@ export function NavBar() {
               </Link>
               <Link
                 href="/auth/signup"
-                className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 px-3 py-1 rounded text-sm font-medium hover:bg-indigo-500/30 transition-all"
+                className="bg-sky-500/20 border border-sky-500/30 text-sky-300 px-3 py-1 rounded text-sm font-medium hover:bg-sky-500/30 transition-all"
               >
                 新規登録
               </Link>

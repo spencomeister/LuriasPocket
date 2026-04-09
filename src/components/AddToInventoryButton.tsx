@@ -110,7 +110,7 @@ export function AddToInventoryButton({ itemType, itemId, itemName, owned, curren
         disabled={isPending}
         className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-all border ${
           isOwned
-            ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40"
+            ? "bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40"
             : "bg-white/5 text-gray-500 border-white/10 hover:bg-white/10 hover:text-gray-300"
         } ${isPending ? "opacity-50" : ""}`}
         title={isOwned ? (isWeapon ? "本数を編集" : "所持リストから削除") : "所持リストに追加"}
@@ -142,7 +142,7 @@ export function AddToInventoryButton({ itemType, itemId, itemName, owned, curren
                 max={99}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
-                className="w-full px-3 py-2 rounded border border-white/10 bg-white/5 text-sm text-gray-200 focus:outline-none focus:border-indigo-500/40"
+                className="w-full px-3 py-2 rounded border border-white/10 bg-white/5 text-sm text-gray-200 focus:outline-none focus:border-sky-500/40"
               />
             </div>
 
@@ -168,7 +168,7 @@ export function AddToInventoryButton({ itemType, itemId, itemName, owned, curren
                 <button
                   onClick={handleSaveWeapon}
                   disabled={isPending}
-                  className="px-3 py-1.5 text-xs rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 transition-colors disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 transition-colors disabled:opacity-50"
                 >
                   {isPending ? "保存中..." : "保存"}
                 </button>

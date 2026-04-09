@@ -80,7 +80,7 @@ export default function AdminPasswordPage() {
               onChange={(e) => setNewPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-indigo-500/50 focus:outline-none"
+              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-sky-500/50 focus:outline-none"
               placeholder="8文字以上"
             />
           </div>
@@ -92,7 +92,7 @@ export default function AdminPasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               minLength={8}
               required
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-indigo-500/50 focus:outline-none"
+              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-sky-500/50 focus:outline-none"
               placeholder="もう一度入力"
             />
           </div>
@@ -103,7 +103,7 @@ export default function AdminPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 font-medium transition-colors disabled:opacity-50"
+            className="w-full py-2 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 font-medium transition-colors disabled:opacity-50"
           >
             {loading ? "変更中..." : "変更"}
           </button>

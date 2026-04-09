@@ -12,9 +12,9 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
     include: { user: { select: { name: true } } },
   });
   if (!shareToken || shareToken.expiresAt < new Date()) {
-    return { title: "共有リンク | GBF Checker" };
+    return { title: "共有リンク | ルリアのぽけっと手帳" };
   }
-  return { title: `${shareToken.user.name} の所持 | GBF Checker` };
+  return { title: `${shareToken.user.name} の所持 | ルリアのぽけっと手帳` };
 }
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
@@ -131,7 +131,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
 function StatCard({ label, count }: { label: string; count: number }) {
   return (
     <div className="glass rounded-xl p-4 text-center border border-white/10">
-      <p className="text-3xl font-bold text-indigo-400">{count}</p>
+      <p className="text-3xl font-bold text-sky-400">{count}</p>
       <p className="text-sm text-gray-500 mt-1">{label}</p>
     </div>
   );
@@ -190,7 +190,7 @@ function InventoryRow({
         {ELEMENT_EMOJI[element]} {elementMap[element.toLowerCase()] ?? element}
       </span>
       {quantity && quantity > 1 ? (
-        <span className="text-xs text-indigo-300 font-bold">×{quantity}</span>
+        <span className="text-xs text-sky-300 font-bold">×{quantity}</span>
       ) : (
         <span className="text-xs text-gray-600">—</span>
       )}

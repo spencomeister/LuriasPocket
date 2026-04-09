@@ -8,7 +8,7 @@ import { FallbackImage } from "@/components/FallbackImage";
 import { SearchBar } from "@/components/SearchBar";
 
 export const metadata = {
-  title: "キャラクター一覧 | GBF Checker",
+  title: "キャラクター一覧 | ルリアのぽけっと手帳",
 };
 
 export default async function CharactersPage({
@@ -190,7 +190,7 @@ export default async function CharactersPage({
                 className={`
                   animate-fade-slide-up glass rounded-xl overflow-hidden border border-white/10
                   transition-all ${elementGlow(c.element)}
-                  ${ownedIds.has(c.id) ? "ring-1 ring-indigo-500/30" : ""}
+                  ${ownedIds.has(c.id) ? "ring-1 ring-sky-500/30" : ""}
                 `}
               >
                 {/* 画像 */}
@@ -210,7 +210,7 @@ export default async function CharactersPage({
                     </div>
                   )}
                   {ownedIds.has(c.id) && (
-                    <div className="absolute top-2 right-2 bg-indigo-500/80 text-white text-xs px-1.5 py-0.5 rounded">
+                    <div className="absolute top-2 right-2 bg-sky-500/80 text-white text-xs px-1.5 py-0.5 rounded">
                       所持
                     </div>
                   )}
@@ -302,7 +302,7 @@ function FilterChip({
       href={href}
       className={`text-xs px-2 py-1 rounded border transition-colors ${
         active
-          ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+          ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
           : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
       }`}
     >
@@ -340,7 +340,7 @@ function Pagination({
           href={buildUrl(p)}
           className={`px-3 py-1 rounded border text-sm transition-colors ${
             p === current
-              ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+              ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
               : "border-white/10 text-gray-400 hover:bg-white/10"
           }`}
         >
