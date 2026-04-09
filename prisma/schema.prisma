@@ -14,8 +14,8 @@ datasource db {
 
 model Character {
   id          Int      @id @default(autoincrement())
-  gameId      String?
-  name        String   @unique
+  gameId      String   @unique
+  name        String
   nameJp      String?
   rarity      String   @default("SSR")
   element     String
@@ -38,8 +38,8 @@ model Character {
 
 model Summon {
   id        Int      @id @default(autoincrement())
-  gameId    String?
-  name      String   @unique
+  gameId    String   @unique
+  name      String
   nameJp    String?
   rarity    String?
   element   String
@@ -56,8 +56,8 @@ model Summon {
 
 model Weapon {
   id         Int      @id @default(autoincrement())
-  gameId     String?
-  name       String   @unique
+  gameId     String   @unique
+  name       String
   nameJp     String?
   rarity     String?
   element    String

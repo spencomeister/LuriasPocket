@@ -24,20 +24,24 @@ export async function POST(request: NextRequest) {
     weapons?: WeaponRow[];
   };
 
-  const results: Record<string, { count: number } | { error: string }> = {};
+  const results: Record<string, { count: number; skipped?: number; errors?: string[] } | { error: string }> = {};
 
   if (body.characters) {
-    try {
-      for (let i = 0; i < body.characters.length; i += BATCH_SIZE) {
-        const batch = body.characters.slice(i, i + BATCH_SIZE);
+    // gameId で重複排除（後勝ち）& gameId 空を除外
+    const deduped = dedup(body.characters.filter((c) => c.gameId?.trim()));
+    const errors: string[] = [];
+    let upserted = 0;
+    for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
+      const batch = deduped.slice(i, i + BATCH_SIZE);
+      try {
         await prisma.$transaction(
           batch.map((c) => {
             const series = c.series ?? deriveSeriesFromObtain(c.obtain);
             return prisma.character.upsert({
-              where: { name: c.name },
+              where: { gameId: c.gameId! },
               create: {
+                gameId: c.gameId!,
                 name: c.name,
-                gameId: c.gameId ?? null,
                 nameJp: c.nameJp ?? null,
                 rarity: c.rarity ?? "SSR",
                 element: c.element ?? "",
@@ -51,7 +55,7 @@ export async function POST(request: NextRequest) {
                 abilities: c.abilities ? JSON.stringify(c.abilities) : null,
               },
               update: {
-                gameId: c.gameId ?? undefined,
+                name: c.name,
                 nameJp: c.nameJp ?? null,
                 rarity: c.rarity ?? undefined,
                 element: c.element ?? "",
@@ -67,24 +71,32 @@ export async function POST(request: NextRequest) {
             });
           })
         );
+        upserted += batch.length;
+      } catch (err) {
+        errors.push(`batch ${i}-${i + batch.length}: ${String(err)}`);
       }
-      results.characters = { count: body.characters.length };
-    } catch (err) {
-      results.characters = { error: String(err) };
     }
+    results.characters = {
+      count: upserted,
+      skipped: body.characters.length - deduped.length,
+      ...(errors.length > 0 ? { errors } : {}),
+    };
   }
 
   if (body.summons) {
-    try {
-      for (let i = 0; i < body.summons.length; i += BATCH_SIZE) {
-        const batch = body.summons.slice(i, i + BATCH_SIZE);
+    const deduped = dedup(body.summons.filter((s) => s.gameId?.trim()));
+    const errors: string[] = [];
+    let upserted = 0;
+    for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
+      const batch = deduped.slice(i, i + BATCH_SIZE);
+      try {
         await prisma.$transaction(
           batch.map((s) =>
             prisma.summon.upsert({
-              where: { name: s.name },
+              where: { gameId: s.gameId! },
               create: {
+                gameId: s.gameId!,
                 name: s.name,
-                gameId: s.gameId ?? null,
                 nameJp: s.nameJp ?? null,
                 rarity: s.rarity ?? null,
                 element: s.element ?? "",
@@ -94,7 +106,7 @@ export async function POST(request: NextRequest) {
                 subAura: s.subAura ?? null,
               },
               update: {
-                gameId: s.gameId ?? undefined,
+                name: s.name,
                 nameJp: s.nameJp ?? null,
                 rarity: s.rarity ?? null,
                 element: s.element ?? "",
@@ -106,24 +118,32 @@ export async function POST(request: NextRequest) {
             })
           )
         );
+        upserted += batch.length;
+      } catch (err) {
+        errors.push(`batch ${i}-${i + batch.length}: ${String(err)}`);
       }
-      results.summons = { count: body.summons.length };
-    } catch (err) {
-      results.summons = { error: String(err) };
     }
+    results.summons = {
+      count: upserted,
+      skipped: body.summons.length - deduped.length,
+      ...(errors.length > 0 ? { errors } : {}),
+    };
   }
 
   if (body.weapons) {
-    try {
-      for (let i = 0; i < body.weapons.length; i += BATCH_SIZE) {
-        const batch = body.weapons.slice(i, i + BATCH_SIZE);
+    const deduped = dedup(body.weapons.filter((w) => w.gameId?.trim()));
+    const errors: string[] = [];
+    let upserted = 0;
+    for (let i = 0; i < deduped.length; i += BATCH_SIZE) {
+      const batch = deduped.slice(i, i + BATCH_SIZE);
+      try {
         await prisma.$transaction(
           batch.map((w) =>
             prisma.weapon.upsert({
-              where: { name: w.name },
+              where: { gameId: w.gameId! },
               create: {
+                gameId: w.gameId!,
                 name: w.name,
-                gameId: w.gameId ?? null,
                 nameJp: w.nameJp ?? null,
                 rarity: w.rarity ?? null,
                 element: w.element ?? "",
@@ -134,7 +154,7 @@ export async function POST(request: NextRequest) {
                 obtain: w.obtain ?? null,
               },
               update: {
-                gameId: w.gameId ?? undefined,
+                name: w.name,
                 nameJp: w.nameJp ?? null,
                 rarity: w.rarity ?? null,
                 element: w.element ?? "",
@@ -147,14 +167,28 @@ export async function POST(request: NextRequest) {
             })
           )
         );
+        upserted += batch.length;
+      } catch (err) {
+        errors.push(`batch ${i}-${i + batch.length}: ${String(err)}`);
       }
-      results.weapons = { count: body.weapons.length };
-    } catch (err) {
-      results.weapons = { error: String(err) };
     }
+    results.weapons = {
+      count: upserted,
+      skipped: body.weapons.length - deduped.length,
+      ...(errors.length > 0 ? { errors } : {}),
+    };
   }
 
   return Response.json({ ok: true, results });
+}
+
+/** gameId で重複排除（後勝ち） */
+function dedup<T extends { gameId?: string | null }>(rows: T[]): T[] {
+  const map = new Map<string, T>();
+  for (const row of rows) {
+    if (row.gameId) map.set(row.gameId, row);
+  }
+  return [...map.values()];
 }
 
 // ── 型定義 ──

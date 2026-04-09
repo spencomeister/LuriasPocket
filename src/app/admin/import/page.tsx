@@ -113,8 +113,15 @@ export default function AdminImportPage() {
       body: JSON.stringify({ characters }),
     });
     const json = await res.json();
-    const count = json.results?.characters?.count ?? 0;
-    update("characters", { status: "done", imported: count });
+    const r = json.results?.characters;
+    if (r?.error) {
+      update("characters", { status: "error", error: r.error });
+    } else {
+      const count = r?.count ?? 0;
+      const info = r?.skipped ? ` (重複除外: ${r.skipped}件)` : "";
+      const errInfo = r?.errors?.length ? ` エラー: ${r.errors.length}バッチ` : "";
+      update("characters", { status: "done", imported: count, error: errInfo || undefined });
+    }
   }, [update]);
 
   const importSummons = useCallback(async () => {
@@ -153,8 +160,14 @@ export default function AdminImportPage() {
       body: JSON.stringify({ summons }),
     });
     const json = await res.json();
-    const count = json.results?.summons?.count ?? 0;
-    update("summons", { status: "done", imported: count });
+    const r = json.results?.summons;
+    if (r?.error) {
+      update("summons", { status: "error", error: r.error });
+    } else {
+      const count = r?.count ?? 0;
+      const errInfo = r?.errors?.length ? ` エラー: ${r.errors.length}バッチ` : "";
+      update("summons", { status: "done", imported: count, error: errInfo || undefined });
+    }
   }, [update]);
 
   const importWeapons = useCallback(async () => {
@@ -196,8 +209,14 @@ export default function AdminImportPage() {
       body: JSON.stringify({ weapons }),
     });
     const json = await res.json();
-    const count = json.results?.weapons?.count ?? 0;
-    update("weapons", { status: "done", imported: count });
+    const r = json.results?.weapons;
+    if (r?.error) {
+      update("weapons", { status: "error", error: r.error });
+    } else {
+      const count = r?.count ?? 0;
+      const errInfo = r?.errors?.length ? ` エラー: ${r.errors.length}バッチ` : "";
+      update("weapons", { status: "done", imported: count, error: errInfo || undefined });
+    }
   }, [update]);
 
   const run = useCallback(async (target: "all" | "characters" | "summons" | "weapons" = "all") => {

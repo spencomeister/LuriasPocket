@@ -22,15 +22,17 @@ export async function POST(request: NextRequest) {
   if (target === "all" || target === "characters") {
     try {
       const chars = await fetchCharacters();
-      for (let i = 0; i < chars.length; i += BATCH_SIZE) {
-        const batch = chars.slice(i, i + BATCH_SIZE);
+      // gameId が空のレコードはスキップ
+      const valid = chars.filter((c) => c.gameId);
+      for (let i = 0; i < valid.length; i += BATCH_SIZE) {
+        const batch = valid.slice(i, i + BATCH_SIZE);
         await prisma.$transaction(
           batch.map((c) =>
             prisma.character.upsert({
-              where: { name: c.name },
+              where: { gameId: c.gameId! },
               create: {
+                gameId: c.gameId!,
                 name: c.name,
-                gameId: c.gameId,
                 nameJp: c.nameJp,
                 rarity: c.rarity,
                 element: c.element,
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
                 abilities: JSON.stringify(c.abilities),
               },
               update: {
-                gameId: c.gameId,
+                name: c.name,
                 nameJp: c.nameJp,
                 rarity: c.rarity,
                 element: c.element,
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
           )
         );
       }
-      results.characters = { fetched: chars.length, upserted: chars.length };
+      results.characters = { fetched: chars.length, upserted: valid.length };
     } catch (err) {
       results.characters = { error: String(err) };
     }
@@ -69,15 +71,16 @@ export async function POST(request: NextRequest) {
   if (target === "all" || target === "summons") {
     try {
       const summons = await fetchSummons();
-      for (let i = 0; i < summons.length; i += BATCH_SIZE) {
-        const batch = summons.slice(i, i + BATCH_SIZE);
+      const validSummons = summons.filter((s) => s.gameId);
+      for (let i = 0; i < validSummons.length; i += BATCH_SIZE) {
+        const batch = validSummons.slice(i, i + BATCH_SIZE);
         await prisma.$transaction(
           batch.map((s) =>
             prisma.summon.upsert({
-              where: { name: s.name },
+              where: { gameId: s.gameId! },
               create: {
+                gameId: s.gameId!,
                 name: s.name,
-                gameId: s.gameId,
                 nameJp: s.nameJp,
                 element: s.element,
                 category: normalizeCategory(s.category),
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
                 subAura: s.subAura,
               },
               update: {
-                gameId: s.gameId,
+                name: s.name,
                 nameJp: s.nameJp,
                 element: s.element,
                 category: normalizeCategory(s.category),
@@ -98,7 +101,7 @@ export async function POST(request: NextRequest) {
           )
         );
       }
-      results.summons = { fetched: summons.length, upserted: summons.length };
+      results.summons = { fetched: summons.length, upserted: validSummons.length };
     } catch (err) {
       results.summons = { error: String(err) };
     }
@@ -108,15 +111,16 @@ export async function POST(request: NextRequest) {
   if (target === "all" || target === "weapons") {
     try {
       const weapons = await fetchWeapons();
-      for (let i = 0; i < weapons.length; i += BATCH_SIZE) {
-        const batch = weapons.slice(i, i + BATCH_SIZE);
+      const validWeapons = weapons.filter((w) => w.gameId);
+      for (let i = 0; i < validWeapons.length; i += BATCH_SIZE) {
+        const batch = validWeapons.slice(i, i + BATCH_SIZE);
         await prisma.$transaction(
           batch.map((w) =>
             prisma.weapon.upsert({
-              where: { name: w.name },
+              where: { gameId: w.gameId! },
               create: {
+                gameId: w.gameId!,
                 name: w.name,
-                gameId: w.gameId,
                 nameJp: w.nameJp,
                 element: w.element,
                 weaponType: normalizeCategory(w.weaponType) ?? "",
@@ -126,7 +130,7 @@ export async function POST(request: NextRequest) {
                 obtain: w.obtain,
               },
               update: {
-                gameId: w.gameId,
+                name: w.name,
                 nameJp: w.nameJp,
                 element: w.element,
                 weaponType: normalizeCategory(w.weaponType) ?? "",
@@ -139,7 +143,7 @@ export async function POST(request: NextRequest) {
           )
         );
       }
-      results.weapons = { fetched: weapons.length, upserted: weapons.length };
+      results.weapons = { fetched: weapons.length, upserted: validWeapons.length };
     } catch (err) {
       results.weapons = { error: String(err) };
     }

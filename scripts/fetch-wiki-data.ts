@@ -34,15 +34,16 @@ async function main() {
     try {
       const chars = await fetchCharacters();
       console.log(`   ${chars.length} 件取得`);
-      for (let i = 0; i < chars.length; i += BATCH_SIZE) {
-        const batch = chars.slice(i, i + BATCH_SIZE);
+      const valid = chars.filter((c) => c.gameId);
+      for (let i = 0; i < valid.length; i += BATCH_SIZE) {
+        const batch = valid.slice(i, i + BATCH_SIZE);
         await prisma.$transaction(
           batch.map((c) =>
             prisma.character.upsert({
-              where: { name: c.name },
+              where: { gameId: c.gameId! },
               create: {
+                gameId: c.gameId!,
                 name: c.name,
-                gameId: c.gameId,
                 nameJp: c.nameJp,
                 rarity: c.rarity,
                 element: c.element,
@@ -55,7 +56,7 @@ async function main() {
                 abilities: JSON.stringify(c.abilities),
               },
               update: {
-                gameId: c.gameId,
+                name: c.name,
                 nameJp: c.nameJp,
                 element: c.element,
                 weapon: c.weapon,
@@ -69,9 +70,9 @@ async function main() {
             })
           )
         );
-        process.stdout.write(`   ${Math.min(i + BATCH_SIZE, chars.length)} / ${chars.length}\r`);
+        process.stdout.write(`   ${Math.min(i + BATCH_SIZE, valid.length)} / ${valid.length}\r`);
       }
-      console.log(`   ✅ ${chars.length} 件 upsert 完了`);
+      console.log(`   ✅ ${valid.length} 件 upsert 完了`);
     } catch (e) {
       console.error("   ❌ キャラクター取得エラー:", e);
     }
@@ -82,15 +83,16 @@ async function main() {
     try {
       const summons = await fetchSummons();
       console.log(`   ${summons.length} 件取得`);
-      for (let i = 0; i < summons.length; i += BATCH_SIZE) {
-        const batch = summons.slice(i, i + BATCH_SIZE);
+      const validSummons = summons.filter((s) => s.gameId);
+      for (let i = 0; i < validSummons.length; i += BATCH_SIZE) {
+        const batch = validSummons.slice(i, i + BATCH_SIZE);
         await prisma.$transaction(
           batch.map((s) =>
             prisma.summon.upsert({
-              where: { name: s.name },
+              where: { gameId: s.gameId! },
               create: {
+                gameId: s.gameId!,
                 name: s.name,
-                gameId: s.gameId,
                 nameJp: s.nameJp,
                 element: s.element,
                 category: normalizeCategory(s.category),
@@ -99,7 +101,7 @@ async function main() {
                 subAura: s.subAura,
               },
               update: {
-                gameId: s.gameId,
+                name: s.name,
                 nameJp: s.nameJp,
                 element: s.element,
                 category: normalizeCategory(s.category),
@@ -110,9 +112,9 @@ async function main() {
             })
           )
         );
-        process.stdout.write(`   ${Math.min(i + BATCH_SIZE, summons.length)} / ${summons.length}\r`);
+        process.stdout.write(`   ${Math.min(i + BATCH_SIZE, validSummons.length)} / ${validSummons.length}\r`);
       }
-      console.log(`   ✅ ${summons.length} 件 upsert 完了`);
+      console.log(`   ✅ ${validSummons.length} 件 upsert 完了`);
     } catch (e) {
       console.error("   ❌ 召喚石取得エラー:", e);
     }
@@ -123,15 +125,16 @@ async function main() {
     try {
       const weapons = await fetchWeapons();
       console.log(`   ${weapons.length} 件取得`);
-      for (let i = 0; i < weapons.length; i += BATCH_SIZE) {
-        const batch = weapons.slice(i, i + BATCH_SIZE);
+      const validWeapons = weapons.filter((w) => w.gameId);
+      for (let i = 0; i < validWeapons.length; i += BATCH_SIZE) {
+        const batch = validWeapons.slice(i, i + BATCH_SIZE);
         await prisma.$transaction(
           batch.map((w) =>
             prisma.weapon.upsert({
-              where: { name: w.name },
+              where: { gameId: w.gameId! },
               create: {
+                gameId: w.gameId!,
                 name: w.name,
-                gameId: w.gameId,
                 nameJp: w.nameJp,
                 element: w.element,
                 weaponType: normalizeCategory(w.weaponType) ?? "",
@@ -141,7 +144,7 @@ async function main() {
                 obtain: w.obtain,
               },
               update: {
-                gameId: w.gameId,
+                name: w.name,
                 nameJp: w.nameJp,
                 element: w.element,
                 weaponType: normalizeCategory(w.weaponType) ?? "",
@@ -153,9 +156,9 @@ async function main() {
             })
           )
         );
-        process.stdout.write(`   ${Math.min(i + BATCH_SIZE, weapons.length)} / ${weapons.length}\r`);
+        process.stdout.write(`   ${Math.min(i + BATCH_SIZE, validWeapons.length)} / ${validWeapons.length}\r`);
       }
-      console.log(`   ✅ ${weapons.length} 件 upsert 完了`);
+      console.log(`   ✅ ${validWeapons.length} 件 upsert 完了`);
     } catch (e) {
       console.error("   ❌ 武器取得エラー:", e);
     }
