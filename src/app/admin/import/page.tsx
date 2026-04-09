@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 const WIKI_API = "https://gbf.wiki/api.php";
 const LIMIT = 500;
+const CHUNK_SIZE = 100; // サーバーへ一度に送る件数
 
 type Status = "idle" | "fetching" | "importing" | "done" | "error";
 
@@ -95,7 +96,6 @@ export default function AdminImportPage() {
       gameId: r.gameId || null,
       nameJp: r.nameJp || null,
       rarity: r.rarity ?? "",
-
       element: r.element ?? "",
       weapon: r.weapon ?? "",
       category: r.category || null,
@@ -107,22 +107,37 @@ export default function AdminImportPage() {
     }));
     update("characters", { status: "importing", fetched: characters.length });
 
-    const res = await fetch("/api/import-wiki", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ characters }),
-    });
-    const json = await res.json();
-    const r = json.results?.characters;
-    if (r?.error) {
-      update("characters", { status: "error", error: r.error });
-    } else {
-      const count = r?.count ?? 0;
-      const parts: string[] = [];
-      if (r?.skipped) parts.push(`重複除外: ${r.skipped}件`);
-      if (r?.errors?.length) parts.push(`エラー: ${r.errors.length}バッチ\n${r.errors.slice(0, 3).join("\n")}`);
-      update("characters", { status: r?.errors?.length ? "error" : "done", imported: count, error: parts.join(" / ") || undefined });
+    let totalImported = 0;
+    let totalSkipped = 0;
+    const allErrors: string[] = [];
+
+    for (let i = 0; i < characters.length; i += CHUNK_SIZE) {
+      const chunk = characters.slice(i, i + CHUNK_SIZE);
+      try {
+        const res = await fetch("/api/import-wiki", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ characters: chunk }),
+        });
+        const json = await res.json();
+        const r = json.results?.characters;
+        if (r?.count) totalImported += r.count;
+        if (r?.skipped) totalSkipped += r.skipped;
+        if (r?.errors) allErrors.push(...r.errors);
+      } catch (e) {
+        allErrors.push(`chunk ${i}-${i + chunk.length}: ${String(e)}`);
+      }
+      update("characters", { imported: totalImported });
     }
+
+    const parts: string[] = [];
+    if (totalSkipped) parts.push(`重複除外: ${totalSkipped}件`);
+    if (allErrors.length) parts.push(`エラー: ${allErrors.length}バッチ\n${allErrors.slice(0, 3).join("\n")}`);
+    update("characters", {
+      status: allErrors.length ? "error" : "done",
+      imported: totalImported,
+      error: parts.join(" / ") || undefined,
+    });
   }, [update]);
 
   const importSummons = useCallback(async () => {
@@ -155,22 +170,37 @@ export default function AdminImportPage() {
     }));
     update("summons", { status: "importing", fetched: summons.length });
 
-    const res = await fetch("/api/import-wiki", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ summons }),
-    });
-    const json = await res.json();
-    const r = json.results?.summons;
-    if (r?.error) {
-      update("summons", { status: "error", error: r.error });
-    } else {
-      const count = r?.count ?? 0;
-      const parts: string[] = [];
-      if (r?.skipped) parts.push(`重複除外: ${r.skipped}件`);
-      if (r?.errors?.length) parts.push(`エラー: ${r.errors.length}バッチ\n${r.errors.slice(0, 3).join("\n")}`);
-      update("summons", { status: r?.errors?.length ? "error" : "done", imported: count, error: parts.join(" / ") || undefined });
+    let totalImported = 0;
+    let totalSkipped = 0;
+    const allErrors: string[] = [];
+
+    for (let i = 0; i < summons.length; i += CHUNK_SIZE) {
+      const chunk = summons.slice(i, i + CHUNK_SIZE);
+      try {
+        const res = await fetch("/api/import-wiki", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ summons: chunk }),
+        });
+        const json = await res.json();
+        const r = json.results?.summons;
+        if (r?.count) totalImported += r.count;
+        if (r?.skipped) totalSkipped += r.skipped;
+        if (r?.errors) allErrors.push(...r.errors);
+      } catch (e) {
+        allErrors.push(`chunk ${i}-${i + chunk.length}: ${String(e)}`);
+      }
+      update("summons", { imported: totalImported });
     }
+
+    const parts: string[] = [];
+    if (totalSkipped) parts.push(`重複除外: ${totalSkipped}件`);
+    if (allErrors.length) parts.push(`エラー: ${allErrors.length}バッチ\n${allErrors.slice(0, 3).join("\n")}`);
+    update("summons", {
+      status: allErrors.length ? "error" : "done",
+      imported: totalImported,
+      error: parts.join(" / ") || undefined,
+    });
   }, [update]);
 
   const importWeapons = useCallback(async () => {
@@ -206,22 +236,37 @@ export default function AdminImportPage() {
     }));
     update("weapons", { status: "importing", fetched: weapons.length });
 
-    const res = await fetch("/api/import-wiki", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ weapons }),
-    });
-    const json = await res.json();
-    const r = json.results?.weapons;
-    if (r?.error) {
-      update("weapons", { status: "error", error: r.error });
-    } else {
-      const count = r?.count ?? 0;
-      const parts: string[] = [];
-      if (r?.skipped) parts.push(`重複除外: ${r.skipped}件`);
-      if (r?.errors?.length) parts.push(`エラー: ${r.errors.length}バッチ\n${r.errors.slice(0, 3).join("\n")}`);
-      update("weapons", { status: r?.errors?.length ? "error" : "done", imported: count, error: parts.join(" / ") || undefined });
+    let totalImported = 0;
+    let totalSkipped = 0;
+    const allErrors: string[] = [];
+
+    for (let i = 0; i < weapons.length; i += CHUNK_SIZE) {
+      const chunk = weapons.slice(i, i + CHUNK_SIZE);
+      try {
+        const res = await fetch("/api/import-wiki", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ weapons: chunk }),
+        });
+        const json = await res.json();
+        const r = json.results?.weapons;
+        if (r?.count) totalImported += r.count;
+        if (r?.skipped) totalSkipped += r.skipped;
+        if (r?.errors) allErrors.push(...r.errors);
+      } catch (e) {
+        allErrors.push(`chunk ${i}-${i + chunk.length}: ${String(e)}`);
+      }
+      update("weapons", { imported: totalImported });
     }
+
+    const parts: string[] = [];
+    if (totalSkipped) parts.push(`重複除外: ${totalSkipped}件`);
+    if (allErrors.length) parts.push(`エラー: ${allErrors.length}バッチ\n${allErrors.slice(0, 3).join("\n")}`);
+    update("weapons", {
+      status: allErrors.length ? "error" : "done",
+      imported: totalImported,
+      error: parts.join(" / ") || undefined,
+    });
   }, [update]);
 
   const run = useCallback(async (target: "all" | "characters" | "summons" | "weapons" = "all") => {

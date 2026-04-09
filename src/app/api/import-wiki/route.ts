@@ -4,7 +4,7 @@ import { deriveSeriesFromObtain } from "@/lib/derive-series";
 import { normalizeCategory } from "@/lib/normalize";
 import { requireAdmin } from "@/lib/admin-guard";
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 10;
 
 /**
  * POST /api/import-wiki
@@ -69,7 +69,8 @@ export async function POST(request: NextRequest) {
                 abilities: c.abilities ? JSON.stringify(c.abilities) : null,
               },
             });
-          })
+          }),
+
         );
         upserted += batch.length;
       } catch (err) {
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
                 subAura: s.subAura ?? null,
               },
             })
-          )
+          ),
         );
         upserted += batch.length;
       } catch (err) {
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
                 obtain: w.obtain ?? null,
               },
             })
-          )
+          ),
         );
         upserted += batch.length;
       } catch (err) {
