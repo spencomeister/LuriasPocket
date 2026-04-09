@@ -30,8 +30,8 @@ export function elementGlow(element: string) {
 export const ELEMENT_EMOJI: Record<string, string> = {
   Fire:  "🔥",
   Water: "💧",
-  Earth: "🌿",
-  Wind:  "🌀",
+  Earth: "🗻",
+  Wind:  "🍃",
   Light: "✨",
   Dark:  "🌑",
 };

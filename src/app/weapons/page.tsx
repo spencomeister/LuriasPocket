@@ -5,8 +5,9 @@ import { auth } from "@/lib/auth";
 import { AddToInventoryButton } from "@/components/AddToInventoryButton";
 import { FallbackImage } from "@/components/FallbackImage";
 import { SearchBar } from "@/components/SearchBar";
-import { FilterBar, Pagination } from "@/components/FilterBar";
+import { FilterBar } from "@/components/FilterBar";
 import type { FilterRowConfig } from "@/components/FilterBar";
+import { Pagination } from "@/components/Pagination";
 import {
   getCachedTranslationMap,
   getCachedExclusions,
