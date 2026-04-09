@@ -118,9 +118,10 @@ export default function AdminImportPage() {
       update("characters", { status: "error", error: r.error });
     } else {
       const count = r?.count ?? 0;
-      const info = r?.skipped ? ` (重複除外: ${r.skipped}件)` : "";
-      const errInfo = r?.errors?.length ? ` エラー: ${r.errors.length}バッチ` : "";
-      update("characters", { status: "done", imported: count, error: errInfo || undefined });
+      const parts: string[] = [];
+      if (r?.skipped) parts.push(`重複除外: ${r.skipped}件`);
+      if (r?.errors?.length) parts.push(`エラー: ${r.errors.length}バッチ\n${r.errors.slice(0, 3).join("\n")}`);
+      update("characters", { status: r?.errors?.length ? "error" : "done", imported: count, error: parts.join(" / ") || undefined });
     }
   }, [update]);
 
@@ -165,8 +166,10 @@ export default function AdminImportPage() {
       update("summons", { status: "error", error: r.error });
     } else {
       const count = r?.count ?? 0;
-      const errInfo = r?.errors?.length ? ` エラー: ${r.errors.length}バッチ` : "";
-      update("summons", { status: "done", imported: count, error: errInfo || undefined });
+      const parts: string[] = [];
+      if (r?.skipped) parts.push(`重複除外: ${r.skipped}件`);
+      if (r?.errors?.length) parts.push(`エラー: ${r.errors.length}バッチ\n${r.errors.slice(0, 3).join("\n")}`);
+      update("summons", { status: r?.errors?.length ? "error" : "done", imported: count, error: parts.join(" / ") || undefined });
     }
   }, [update]);
 
@@ -214,8 +217,10 @@ export default function AdminImportPage() {
       update("weapons", { status: "error", error: r.error });
     } else {
       const count = r?.count ?? 0;
-      const errInfo = r?.errors?.length ? ` エラー: ${r.errors.length}バッチ` : "";
-      update("weapons", { status: "done", imported: count, error: errInfo || undefined });
+      const parts: string[] = [];
+      if (r?.skipped) parts.push(`重複除外: ${r.skipped}件`);
+      if (r?.errors?.length) parts.push(`エラー: ${r.errors.length}バッチ\n${r.errors.slice(0, 3).join("\n")}`);
+      update("weapons", { status: r?.errors?.length ? "error" : "done", imported: count, error: parts.join(" / ") || undefined });
     }
   }, [update]);
 
@@ -300,7 +305,7 @@ export default function AdminImportPage() {
                   取得: {p.fetched} 件 / インポート: {p.imported} 件
                 </p>
               )}
-              {p.error && <p className="text-sm text-red-400 mt-1">{p.error}</p>}
+              {p.error && <pre className="text-xs text-red-400 mt-1 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">{p.error}</pre>}
             </div>
           );
         })}
