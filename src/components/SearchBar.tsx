@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function SearchBar() {
   const router = useRouter();
@@ -9,15 +9,29 @@ export function SearchBar() {
   const searchParams = useSearchParams();
   const [value, setValue] = useState(searchParams.get("q") ?? "");
 
+  // Keep a ref so the debounced effect always reads the latest params
+  // without re-firing when other params (e.g. page) change.
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+
+  // Sync URL → state (back/forward navigation)
   useEffect(() => {
     setValue(searchParams.get("q") ?? "");
   }, [searchParams]);
 
+  // Debounced push: only fires when `value` changes (user typing)
   useEffect(() => {
     const timer = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value.trim()) {
-        params.set("q", value.trim());
+      const current = searchParamsRef.current;
+      const currentQ = current.get("q") ?? "";
+      const trimmed = value.trim();
+
+      // Skip navigation when the URL already matches
+      if (trimmed === currentQ) return;
+
+      const params = new URLSearchParams(current.toString());
+      if (trimmed) {
+        params.set("q", trimmed);
       } else {
         params.delete("q");
       }
@@ -27,7 +41,7 @@ export function SearchBar() {
       router.push(`${pathname}${q ? `?${q}` : ""}`);
     }, 300);
     return () => clearTimeout(timer);
-  }, [value, pathname, router, searchParams]);
+  }, [value, pathname, router]);
 
   return (
     <input

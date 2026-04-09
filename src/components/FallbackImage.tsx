@@ -32,6 +32,15 @@ export function FallbackImage({
     }
   };
 
+  // Detect images that loaded but are too small (placeholder thumbnails,
+  // ORB-blocked responses decoded as 0×0, etc.).
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth < 50 || img.naturalHeight < 50) {
+      handleError();
+    }
+  };
+
   if (stage === "placeholder") {
     return (
       <div className={placeholderClassName || className}>
@@ -50,6 +59,7 @@ export function FallbackImage({
       className={className}
       loading="lazy"
       onError={handleError}
+      onLoad={handleLoad}
     />
   );
 }
