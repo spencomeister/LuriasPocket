@@ -224,9 +224,18 @@ export default async function WeaponsPage({
                   {w.nameJp && <p className="text-xs text-gray-500 truncate">{w.name}</p>}
                 </div>
 
-                <span className={`text-xs px-1.5 py-0.5 rounded border w-fit ${elementBadge(w.element)}`}>
-                  {ELEMENT_EMOJI[w.element]} {elementMap[w.element.toLowerCase()] ?? w.element}
-                </span>
+                <div className="flex gap-1">
+                  <span className={`text-xs px-1.5 py-0.5 rounded border font-bold ${
+                    w.rarity === "SSR" ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
+                      : w.rarity === "SR" ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                      : "bg-white/5 text-gray-400 border-white/10"
+                  }`}>
+                    {w.rarity ?? "—"}
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded border ${elementBadge(w.element)}`}>
+                    {ELEMENT_EMOJI[w.element]} {elementMap[w.element.toLowerCase()] ?? w.element}
+                  </span>
+                </div>
 
                 <span className="hidden sm:block text-xs text-gray-400">
                   {weaponTypeMap[w.weaponType.toLowerCase()] ?? w.weaponType}

@@ -6,6 +6,11 @@ import { requireAdmin } from "@/lib/admin-guard";
 
 const BATCH_SIZE = 10;
 
+/** Normalize rarity to uppercase (e.g. "ssr" → "SSR") */
+function normalizeRarity(v: string | null | undefined): string {
+  return v ? v.toUpperCase() : "SSR";
+}
+
 /**
  * POST /api/import-wiki
  *
@@ -43,7 +48,7 @@ export async function POST(request: NextRequest) {
                 gameId: c.gameId!,
                 name: c.name,
                 nameJp: c.nameJp ?? null,
-                rarity: c.rarity ?? "SSR",
+                rarity: normalizeRarity(c.rarity),
                 element: c.element ?? "",
                 weapon: c.weapon ?? "",
                 category: normalizeCategory(c.category),
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
               update: {
                 name: c.name,
                 nameJp: c.nameJp ?? null,
-                rarity: c.rarity ?? undefined,
+                rarity: normalizeRarity(c.rarity),
                 element: c.element ?? "",
                 weapon: c.weapon ?? "",
                 category: normalizeCategory(c.category),
@@ -99,7 +104,7 @@ export async function POST(request: NextRequest) {
                 gameId: s.gameId!,
                 name: s.name,
                 nameJp: s.nameJp ?? null,
-                rarity: s.rarity ?? null,
+                rarity: s.rarity ? normalizeRarity(s.rarity) : null,
                 element: s.element ?? "",
                 category: normalizeCategory(s.category),
                 imageUrl: s.imageUrl ?? null,
@@ -109,7 +114,7 @@ export async function POST(request: NextRequest) {
               update: {
                 name: s.name,
                 nameJp: s.nameJp ?? null,
-                rarity: s.rarity ?? null,
+                rarity: s.rarity ? normalizeRarity(s.rarity) : null,
                 element: s.element ?? "",
                 category: normalizeCategory(s.category),
                 imageUrl: s.imageUrl ?? null,
@@ -146,7 +151,7 @@ export async function POST(request: NextRequest) {
                 gameId: w.gameId!,
                 name: w.name,
                 nameJp: w.nameJp ?? null,
-                rarity: w.rarity ?? null,
+                rarity: w.rarity ? normalizeRarity(w.rarity) : null,
                 element: w.element ?? "",
                 weaponType: normalizeCategory(w.weaponType) ?? "",
                 category: normalizeCategory(w.category),
@@ -157,7 +162,7 @@ export async function POST(request: NextRequest) {
               update: {
                 name: w.name,
                 nameJp: w.nameJp ?? null,
-                rarity: w.rarity ?? null,
+                rarity: w.rarity ? normalizeRarity(w.rarity) : null,
                 element: w.element ?? "",
                 weaponType: normalizeCategory(w.weaponType) ?? "",
                 category: normalizeCategory(w.category),

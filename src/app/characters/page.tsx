@@ -230,6 +230,13 @@ export default async function CharactersPage({
 
                   {/* バッジ群 */}
                   <div className="flex flex-wrap gap-1">
+                    <span className={`text-xs px-1.5 py-0.5 rounded border font-bold ${
+                      c.rarity === "SSR" ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
+                        : c.rarity === "SR" ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                        : "bg-white/5 text-gray-400 border-white/10"
+                    }`}>
+                      {c.rarity}
+                    </span>
                     <span className={`text-xs px-1.5 py-0.5 rounded border ${elementBadge(c.element)}`}>
                       {ELEMENT_EMOJI[c.element]} {elementMap[c.element.toLowerCase()] ?? c.element}
                     </span>

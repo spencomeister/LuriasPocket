@@ -196,9 +196,18 @@ export default async function SummonsPage({
                   {s.nameJp && <p className="text-xs text-gray-500 truncate">{s.name}</p>}
                 </div>
 
-                <span className={`text-xs px-1.5 py-0.5 rounded border w-fit ${elementBadge(s.element)}`}>
-                  {ELEMENT_EMOJI[s.element]} {elementMap[s.element.toLowerCase()] ?? s.element}
-                </span>
+                <div className="flex gap-1">
+                  <span className={`text-xs px-1.5 py-0.5 rounded border font-bold ${
+                    s.rarity === "SSR" ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
+                      : s.rarity === "SR" ? "bg-purple-500/15 text-purple-300 border-purple-500/30"
+                      : "bg-white/5 text-gray-400 border-white/10"
+                  }`}>
+                    {s.rarity ?? "—"}
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded border ${elementBadge(s.element)}`}>
+                    {ELEMENT_EMOJI[s.element]} {elementMap[s.element.toLowerCase()] ?? s.element}
+                  </span>
+                </div>
 
                 <span className="hidden sm:block text-xs text-gray-500">
                   {s.category ? (seriesMap[s.category.toLowerCase()] ?? s.category) : "—"}
