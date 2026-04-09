@@ -29,6 +29,7 @@ function getProxyAgent(): HttpsProxyAgent<string> | undefined {
 
 export interface WikiCharacter {
   name: string;
+  gameId: string | null;
   nameJp: string | null;
   rarity: string;
   element: string;
@@ -43,6 +44,7 @@ export interface WikiCharacter {
 
 export interface WikiSummon {
   name: string;
+  gameId: string | null;
   nameJp: string | null;
   element: string;
   category: string | null;
@@ -53,6 +55,7 @@ export interface WikiSummon {
 
 export interface WikiWeapon {
   name: string;
+  gameId: string | null;
   nameJp: string | null;
   element: string;
   weaponType: string;
@@ -125,6 +128,7 @@ export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> 
   const rows = await cargoQueryAll({
     tables: "characters",
     fields: [
+      "characters.id=gameId",
       "characters.name",
       "characters.jpname=nameJp",
       "characters.rarity",
@@ -141,6 +145,7 @@ export async function fetchCharacters(rarity = "SSR"): Promise<WikiCharacter[]> 
 
   return rows.map((row) => ({
     name: row["name"] ?? "",
+    gameId: row["gameId"] || null,
     nameJp: row["nameJp"] || null,
     rarity: row["rarity"] ?? rarity,
     element: row["element"] ?? "",
@@ -161,6 +166,7 @@ export async function fetchSummons(): Promise<WikiSummon[]> {
   const rows = await cargoQueryAll({
     tables: "summons",
     fields: [
+      "summons.id=gameId",
       "summons.name",
       "summons.jpname=nameJp",
       "summons.element",
@@ -174,6 +180,7 @@ export async function fetchSummons(): Promise<WikiSummon[]> {
 
   return rows.map((row) => ({
     name: row["name"] ?? "",
+    gameId: row["gameId"] || null,
     nameJp: row["nameJp"] || null,
     element: row["element"] ?? "",
     category: normalizeCategory(row["category"]),
@@ -190,6 +197,7 @@ export async function fetchWeapons(): Promise<WikiWeapon[]> {
   const rows = await cargoQueryAll({
     tables: "weapons",
     fields: [
+      "weapons.id=gameId",
       "weapons.name",
       "weapons.jpname=nameJp",
       "weapons.element",
@@ -205,6 +213,7 @@ export async function fetchWeapons(): Promise<WikiWeapon[]> {
 
   return rows.map((row) => ({
     name: row["name"] ?? "",
+    gameId: row["gameId"] || null,
     nameJp: row["nameJp"] || null,
     element: row["element"] ?? "",
     weaponType: normalizeCategory(row["weaponType"]) ?? "",

@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
           where: { name: c.name },
           create: {
             name: c.name,
+            gameId: c.gameId,
             nameJp: c.nameJp,
             rarity: c.rarity,
             element: c.element,
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
             abilities: JSON.stringify(c.abilities),
           },
           update: {
+            gameId: c.gameId,
             nameJp: c.nameJp,
             element: c.element,
             weapon: c.weapon,
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest) {
           where: { name: s.name },
           create: {
             name: s.name,
+            gameId: s.gameId,
             nameJp: s.nameJp,
             element: s.element,
             category: normalizeCategory(s.category),
@@ -75,6 +78,7 @@ export async function POST(request: NextRequest) {
             subAura: s.subAura,
           },
           update: {
+            gameId: s.gameId,
             nameJp: s.nameJp,
             element: s.element,
             category: normalizeCategory(s.category),
@@ -101,6 +105,7 @@ export async function POST(request: NextRequest) {
           where: { name: w.name },
           create: {
             name: w.name,
+            gameId: w.gameId,
             nameJp: w.nameJp,
             element: w.element,
             weaponType: normalizeCategory(w.weaponType) ?? "",
@@ -110,6 +115,7 @@ export async function POST(request: NextRequest) {
             obtain: w.obtain,
           },
           update: {
+            gameId: w.gameId,
             nameJp: w.nameJp,
             element: w.element,
             weaponType: normalizeCategory(w.weaponType) ?? "",

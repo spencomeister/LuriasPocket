@@ -38,6 +38,7 @@ async function main() {
           where: { name: c.name },
           create: {
             name: c.name,
+            gameId: c.gameId,
             nameJp: c.nameJp,
             rarity: c.rarity,
             element: c.element,
@@ -50,6 +51,7 @@ async function main() {
             abilities: JSON.stringify(c.abilities),
           },
           update: {
+            gameId: c.gameId,
             nameJp: c.nameJp,
             element: c.element,
             weapon: c.weapon,
@@ -81,6 +83,7 @@ async function main() {
           where: { name: s.name },
           create: {
             name: s.name,
+            gameId: s.gameId,
             nameJp: s.nameJp,
             element: s.element,
             category: normalizeCategory(s.category),
@@ -89,6 +92,7 @@ async function main() {
             subAura: s.subAura,
           },
           update: {
+            gameId: s.gameId,
             nameJp: s.nameJp,
             element: s.element,
             category: normalizeCategory(s.category),
@@ -117,6 +121,7 @@ async function main() {
           where: { name: w.name },
           create: {
             name: w.name,
+            gameId: w.gameId,
             nameJp: w.nameJp,
             element: w.element,
             weaponType: normalizeCategory(w.weaponType) ?? "",
@@ -126,6 +131,7 @@ async function main() {
             obtain: w.obtain,
           },
           update: {
+            gameId: w.gameId,
             nameJp: w.nameJp,
             element: w.element,
             weaponType: normalizeCategory(w.weaponType) ?? "",

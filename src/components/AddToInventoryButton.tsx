@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   itemType: "character" | "summon" | "weapon";
@@ -118,8 +119,8 @@ export function AddToInventoryButton({ itemType, itemId, itemName, owned, curren
         {isOwned ? "✓" : "+"}
       </button>
 
-      {/* 武器 本数設定ダイアログ */}
-      {showDialog && (
+      {/* 武器 本数設定ダイアログ — Portal で body 直下にレンダリング */}
+      {showDialog && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={(e) => {
@@ -175,7 +176,8 @@ export function AddToInventoryButton({ itemType, itemId, itemName, owned, curren
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

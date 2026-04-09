@@ -6,13 +6,13 @@ export default function HomePage() {
       <section className="text-center py-16">
         <h1 className="text-5xl font-bold text-gradient mb-4 animate-fade-slide-up font-title">ルリアのぽけっと手帳</h1>
         <p className="text-gray-400 text-lg max-w-xl mx-auto animate-fade-slide-up" style={{ "--stagger": 1 } as React.CSSProperties}>
-          グランブルーファンタジーのキャラクター・召喚石・武器の所持状況をかんたん管理♪
+          グランブルーファンタジーのキャラクター・召喚石・武器の所持状況をかんたん管理！
           属性・武器種・カテゴリでフィルタリングできます。
         </p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <FeatureCard href="/characters" title="⚔️ キャラクター" desc="SSRキャラクターの属性・得意武器・カテゴリ・スキル・サポアビを確認できます。" i={0} />
+        <FeatureCard href="/characters" title="⚔️ キャラクター" desc="SSRキャラクターの属性・得意武器・カテゴリを確認できます。" i={0} />
         <FeatureCard href="/summons" title="🌟 召喚石" desc="召喚石のメイン加護・サブ加護・属性・カテゴリを一覧表示します。" i={1} />
         <FeatureCard href="/weapons" title="🗡️ 武器" desc="武器のスキル・武器種・属性を一覧表示します。複数所持も管理できます。" i={2} />
       </section>

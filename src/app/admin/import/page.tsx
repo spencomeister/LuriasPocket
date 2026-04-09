@@ -72,149 +72,150 @@ export default function AdminImportPage() {
     [],
   );
 
-  const run = useCallback(async () => {
+  const importCharacters = useCallback(async () => {
+    update("characters", { status: "fetching", fetched: 0, imported: 0, error: undefined });
+    const rows = await cargoQueryAll({
+      tables: "characters",
+      fields: [
+        "characters.id=gameId",
+        "characters.name",
+        "characters.jpname=nameJp",
+        "characters.rarity",
+        "characters.element",
+        "characters.weapon",
+        "characters.type=category",
+        "characters.art1=image",
+        "characters.release_date=releaseDate",
+        "characters.obtain",
+      ].join(","),
+      where: 'characters.rarity="SSR"',
+      order_by: "characters.release_date DESC",
+    });
+    const characters = rows.map((r: Record<string, string>) => ({
+      name: r.name ?? "",
+      gameId: r.gameId || null,
+      nameJp: r.nameJp || null,
+      rarity: r.rarity ?? "SSR",
+      element: r.element ?? "",
+      weapon: r.weapon ?? "",
+      category: r.category || null,
+      imageUrl: buildImageUrl(r.image),
+      releaseDate: r.releaseDate || null,
+      obtain: r.obtain || null,
+      skills: [],
+      abilities: [],
+    }));
+    update("characters", { status: "importing", fetched: characters.length });
+
+    const res = await fetch("/api/import-wiki", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ characters }),
+    });
+    const json = await res.json();
+    const count = json.results?.characters?.count ?? 0;
+    update("characters", { status: "done", imported: count });
+  }, [update]);
+
+  const importSummons = useCallback(async () => {
+    update("summons", { status: "fetching", fetched: 0, imported: 0, error: undefined });
+    const rows = await cargoQueryAll({
+      tables: "summons",
+      fields: [
+        "summons.id=gameId",
+        "summons.name",
+        "summons.jpname=nameJp",
+        "summons.rarity",
+        "summons.element",
+        "summons.series=category",
+        "summons.img_icon=image",
+        "summons.aura1=mainAura",
+        "summons.subaura1=subAura",
+      ].join(","),
+      order_by: "summons.name ASC",
+    });
+    const summons = rows.map((r: Record<string, string>) => ({
+      name: r.name ?? "",
+      gameId: r.gameId || null,
+      nameJp: r.nameJp || null,
+      rarity: r.rarity || null,
+      element: r.element ?? "",
+      category: r.category || null,
+      imageUrl: buildImageUrl(r.image),
+      mainAura: r.mainAura || null,
+      subAura: r.subAura || null,
+    }));
+    update("summons", { status: "importing", fetched: summons.length });
+
+    const res = await fetch("/api/import-wiki", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summons }),
+    });
+    const json = await res.json();
+    const count = json.results?.summons?.count ?? 0;
+    update("summons", { status: "done", imported: count });
+  }, [update]);
+
+  const importWeapons = useCallback(async () => {
+    update("weapons", { status: "fetching", fetched: 0, imported: 0, error: undefined });
+    const rows = await cargoQueryAll({
+      tables: "weapons",
+      fields: [
+        "weapons.id=gameId",
+        "weapons.name",
+        "weapons.jpname=nameJp",
+        "weapons.rarity",
+        "weapons.element",
+        "weapons.type=weaponType",
+        "weapons.series=category",
+        "weapons.img_icon=image",
+        "weapons.s1_name=skill1",
+        "weapons.s2_name=skill2",
+        "weapons.obtain",
+      ].join(","),
+      order_by: "weapons.name ASC",
+    });
+    const weapons = rows.map((r: Record<string, string>) => ({
+      name: r.name ?? "",
+      gameId: r.gameId || null,
+      nameJp: r.nameJp || null,
+      rarity: r.rarity || null,
+      element: r.element ?? "",
+      weaponType: r.weaponType ?? "",
+      category: r.category || null,
+      imageUrl: buildImageUrl(r.image),
+      skills: [r.skill1, r.skill2].filter(Boolean) as string[],
+      obtain: r.obtain || null,
+    }));
+    update("weapons", { status: "importing", fetched: weapons.length });
+
+    const res = await fetch("/api/import-wiki", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weapons }),
+    });
+    const json = await res.json();
+    const count = json.results?.weapons?.count ?? 0;
+    update("weapons", { status: "done", imported: count });
+  }, [update]);
+
+  const run = useCallback(async (target: "all" | "characters" | "summons" | "weapons" = "all") => {
     setRunning(true);
-    setProgress(initial);
+    if (target === "all") setProgress(initial);
 
-    // ── キャラクター ──
-    try {
-      update("characters", { status: "fetching" });
-      const rows = await cargoQueryAll({
-        tables: "characters",
-        fields: [
-          "characters.id=gameId",
-          "characters.name",
-          "characters.jpname=nameJp",
-          "characters.rarity",
-          "characters.element",
-          "characters.weapon",
-          "characters.type=category",
-          "characters.art1=image",
-          "characters.release_date=releaseDate",
-          "characters.obtain",
-        ].join(","),
-        where: 'characters.rarity="SSR"',
-        order_by: "characters.release_date DESC",
-      });
-      const characters = rows.map((r: Record<string, string>) => ({
-        name: r.name ?? "",
-        gameId: r.gameId || null,
-        nameJp: r.nameJp || null,
-        rarity: r.rarity ?? "SSR",
-        element: r.element ?? "",
-        weapon: r.weapon ?? "",
-        category: r.category || null,
-        imageUrl: buildImageUrl(r.image),
-        releaseDate: r.releaseDate || null,
-        obtain: r.obtain || null,
-        skills: [],
-        abilities: [],
-      }));
-      update("characters", { status: "importing", fetched: characters.length });
-
-      const res = await fetch("/api/import-wiki", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ characters }),
-      });
-      const json = await res.json();
-      const count = json.results?.characters?.count ?? 0;
-      update("characters", { status: "done", imported: count });
-    } catch (e) {
-      update("characters", { status: "error", error: String(e) });
+    if (target === "all" || target === "characters") {
+      try { await importCharacters(); } catch (e) { update("characters", { status: "error", error: String(e) }); }
     }
-
-    // ── 召喚石 ──
-    try {
-      update("summons", { status: "fetching" });
-      const rows = await cargoQueryAll({
-        tables: "summons",
-        fields: [
-          "summons.id=gameId",
-          "summons.name",
-          "summons.jpname=nameJp",
-          "summons.rarity",
-          "summons.element",
-          "summons.series=category",
-          "summons.img_icon=image",
-          "summons.aura1=mainAura",
-          "summons.subaura1=subAura",
-        ].join(","),
-        order_by: "summons.name ASC",
-      });
-      const summons = rows.map((r: Record<string, string>) => ({
-        name: r.name ?? "",
-        gameId: r.gameId || null,
-        nameJp: r.nameJp || null,
-        rarity: r.rarity || null,
-        element: r.element ?? "",
-        category: r.category || null,
-        imageUrl: buildImageUrl(r.image),
-        mainAura: r.mainAura || null,
-        subAura: r.subAura || null,
-      }));
-      update("summons", { status: "importing", fetched: summons.length });
-
-      const res = await fetch("/api/import-wiki", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summons }),
-      });
-      const json = await res.json();
-      const count = json.results?.summons?.count ?? 0;
-      update("summons", { status: "done", imported: count });
-    } catch (e) {
-      update("summons", { status: "error", error: String(e) });
+    if (target === "all" || target === "summons") {
+      try { await importSummons(); } catch (e) { update("summons", { status: "error", error: String(e) }); }
     }
-
-    // ── 武器 ──
-    try {
-      update("weapons", { status: "fetching" });
-      const rows = await cargoQueryAll({
-        tables: "weapons",
-        fields: [
-          "weapons.id=gameId",
-          "weapons.name",
-          "weapons.jpname=nameJp",
-          "weapons.rarity",
-          "weapons.element",
-          "weapons.type=weaponType",
-          "weapons.series=category",
-          "weapons.img_icon=image",
-          "weapons.s1_name=skill1",
-          "weapons.s2_name=skill2",
-          "weapons.obtain",
-        ].join(","),
-        order_by: "weapons.name ASC",
-      });
-      const weapons = rows.map((r: Record<string, string>) => ({
-        name: r.name ?? "",
-        gameId: r.gameId || null,
-        nameJp: r.nameJp || null,
-        rarity: r.rarity || null,
-        element: r.element ?? "",
-        weaponType: r.weaponType ?? "",
-        category: r.category || null,
-        imageUrl: buildImageUrl(r.image),
-        skills: [r.skill1, r.skill2].filter(Boolean) as string[],
-        obtain: r.obtain || null,
-      }));
-      update("weapons", { status: "importing", fetched: weapons.length });
-
-      const res = await fetch("/api/import-wiki", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weapons }),
-      });
-      const json = await res.json();
-      const count = json.results?.weapons?.count ?? 0;
-      update("weapons", { status: "done", imported: count });
-    } catch (e) {
-      update("weapons", { status: "error", error: String(e) });
+    if (target === "all" || target === "weapons") {
+      try { await importWeapons(); } catch (e) { update("weapons", { status: "error", error: String(e) }); }
     }
 
     setRunning(false);
-  }, [update]);
+  }, [importCharacters, importSummons, importWeapons, update]);
 
   if (authed === null) {
     return (
@@ -234,13 +235,36 @@ export default function AdminImportPage() {
         ブラウザから GBF Wiki API を直接取得し、ローカル DB に保存します。
       </p>
 
-      <button
-        onClick={run}
-        disabled={running}
-        className="bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 disabled:opacity-50 px-6 py-2 rounded font-medium mb-8 transition-colors"
-      >
-        {running ? "インポート中..." : "インポート開始"}
-      </button>
+      <div className="flex flex-wrap gap-3 mb-8">
+        <button
+          onClick={() => run("all")}
+          disabled={running}
+          className="bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 disabled:opacity-50 px-6 py-2 rounded font-medium transition-colors"
+        >
+          {running ? "インポート中..." : "すべてインポート"}
+        </button>
+        <button
+          onClick={() => run("characters")}
+          disabled={running}
+          className="bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 disabled:opacity-50 px-4 py-2 rounded text-sm transition-colors"
+        >
+          キャラクターのみ
+        </button>
+        <button
+          onClick={() => run("summons")}
+          disabled={running}
+          className="bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 disabled:opacity-50 px-4 py-2 rounded text-sm transition-colors"
+        >
+          召喚石のみ
+        </button>
+        <button
+          onClick={() => run("weapons")}
+          disabled={running}
+          className="bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 disabled:opacity-50 px-4 py-2 rounded text-sm transition-colors"
+        >
+          武器のみ
+        </button>
+      </div>
 
       <div className="space-y-4">
         {(["characters", "summons", "weapons"] as const).map((key) => {
